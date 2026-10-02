@@ -1,0 +1,41 @@
+{
+  "name": "fastvid",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "FastVid by Wahyu Andika Putra monorepo scaffold.",
+  "packageManager": "pnpm@9.15.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "typecheck": "turbo typecheck",
+    "test": "turbo test",
+    "format": "prettier --check .",
+    "smoke:local": "node apps/api/node_modules/tsx/dist/cli.mjs scripts/local-smoke.ts",
+    "check:local-production": "pnpm typecheck && pnpm build && pnpm lint && pnpm test && node apps/api/node_modules/tsx/dist/cli.mjs scripts/local-smoke.ts --optional",
+    "db:migrate": "pnpm --filter @vidsaveid/db db:migrate",
+    "db:seed": "pnpm --filter @vidsaveid/db db:seed",
+    "db:seed:dev": "pnpm --filter @vidsaveid/db db:seed:dev",
+    "db:seed:verify": "pnpm --filter @vidsaveid/db db:seed:verify",
+    "api:smoke": "pnpm --filter @vidsaveid/api api:smoke",
+    "admin:bootstrap": "pnpm --filter @vidsaveid/api admin:bootstrap",
+    "admin:smoke": "pnpm --filter @vidsaveid/api admin:smoke"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.18.0",
+    "@types/node": "^20.17.10",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react-hooks": "^5.1.0",
+    "eslint-plugin-react-refresh": "^0.4.16",
+    "globals": "^15.14.0",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.20.0"
+  }
+}

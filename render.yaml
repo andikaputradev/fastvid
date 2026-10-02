@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: vidsaveid-api
+    env: node
+    plan: starter
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter @vidsaveid/api build
+    startCommand: pnpm --filter @vidsaveid/api start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: NODE_ENV
+        value: production
+      - key: API_HOST
+        value: 0.0.0.0
+      - key: WEB_ORIGIN
+        value: https://your-frontend-domain.example
+      - key: PUBLIC_API_BASE_URL
+        value: https://your-api-domain.example
+      - key: DATABASE_URL
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: IP_HASH_SECRET
+        sync: false
+      - key: API_KEY_ENCRYPTION_KEY
+        sync: false
+      - key: ADMIN_SESSION_SECRET
+        sync: false
