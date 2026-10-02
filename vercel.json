@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "buildCommand": "pnpm --filter @vidsaveid/web build",
+  "buildCommand": "pnpm --filter @vidsaveid/shared build && pnpm --filter @vidsaveid/web build",
   "outputDirectory": "apps/web/dist",
   "cleanUrls": true,
   "trailingSlash": false,
