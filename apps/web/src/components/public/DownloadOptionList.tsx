@@ -1,4 +1,4 @@
-import { Download, Music, Video } from "lucide-react";
+import { Download, FileImage, Music, Video } from "lucide-react";
 import type { DownloadResponse } from "../../lib/api";
 import { getApiBaseUrl } from "../../lib/env";
 
@@ -35,7 +35,18 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
       </h3>
       <div className="grid gap-2 sm:grid-cols-2">
         {mediaItems.map((item, index) => {
-          const isAudio = item.format === "mp3" || !item.hasAudio;
+          const isAudio =
+            item.format === "mp3" ||
+            item.format === "m4a" ||
+            item.format === "wav" ||
+            item.format === "aac" ||
+            item.format === "ogg";
+          const isImage =
+            item.format === "image" ||
+            item.format === "jpg" ||
+            item.format === "jpeg" ||
+            item.format === "png" ||
+            item.format === "webp";
           const formattedSize = formatBytes(item.sizeBytes);
           const rawUrl = item.url;
           const downloadHref = rawUrl.startsWith("/")
@@ -56,10 +67,18 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
                   className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
                     isAudio
                       ? "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400"
-                      : "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400"
+                      : isImage
+                        ? "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-400"
+                        : "bg-teal-100 text-teal-700 dark:bg-teal-950/60 dark:text-teal-400"
                   }`}
                 >
-                  {isAudio ? <Music className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+                  {isAudio ? (
+                    <Music className="h-5 w-5" />
+                  ) : isImage ? (
+                    <FileImage className="h-5 w-5" />
+                  ) : (
+                    <Video className="h-5 w-5" />
+                  )}
                 </div>
                 <div className="min-w-0 text-left">
                   <div className="truncate text-xs font-bold text-slate-900 dark:text-white">

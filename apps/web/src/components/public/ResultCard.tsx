@@ -53,7 +53,7 @@ export function ResultCard({ error, onReset, result }: ResultCardProps) {
       <div className="mt-4 overflow-hidden rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm dark:border-emerald-900/60 dark:bg-slate-850">
         <div className="mb-3 flex items-center gap-2 text-xs font-bold text-emerald-700 dark:text-emerald-400">
           <CheckCircle2 className="h-4 w-4" />
-          <span>Video Berhasil Diproses</span>
+          <span>Media Berhasil Diproses</span>
           {result.platform ? (
             <span className="ml-auto rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase text-slate-700 dark:bg-slate-800 dark:text-slate-300">
               {result.platform}

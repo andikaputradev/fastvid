@@ -44,10 +44,105 @@ function resolveApiKey(encryptedKey: string | null): string | null {
 
 function normalizeMediaItems(payload: Record<string, unknown>, _platformSlug: string): ExtractedMediaItem[] {
   const items: ExtractedMediaItem[] = [];
+  const seenUrls = new Set<string>();
 
-  // 1. Cobalt status: "tunnel" | "redirect"
+  const addItem = (item: ExtractedMediaItem) => {
+    if (!item.url || typeof item.url !== "string" || !item.url.startsWith("http")) {
+      return;
+    }
+    const cleanUrl = item.url.trim();
+    if (seenUrls.has(cleanUrl)) {
+      return;
+    }
+    seenUrls.add(cleanUrl);
+    items.push({ ...item, url: cleanUrl });
+  };
+
+  let videoHeaders: Record<string, string> | undefined;
+
+  // 1. Direct Tikwm / Kyzzz / Douyin play URLs at root level
+  const rootHdPlay =
+    typeof payload.hdplay === "string"
+      ? payload.hdplay
+      : typeof payload.hd_play_url === "string"
+        ? payload.hd_play_url
+        : typeof payload.hdPlayUrl === "string"
+          ? payload.hdPlayUrl
+          : null;
+  if (rootHdPlay) {
+    addItem({
+      format: "mp4",
+      hasAudio: true,
+      quality: "HD (No Watermark)",
+      url: rootHdPlay
+    });
+  }
+
+  const rootPlay =
+    typeof payload.play === "string"
+      ? payload.play
+      : typeof payload.play_url === "string"
+        ? payload.play_url
+        : typeof payload.playUrl === "string"
+          ? payload.playUrl
+          : typeof payload.nowm === "string"
+            ? payload.nowm
+            : typeof payload.no_watermark === "string"
+              ? payload.no_watermark
+              : null;
+  if (rootPlay) {
+    addItem({
+      format: "mp4",
+      hasAudio: true,
+      quality: items.length > 0 ? "Default (No Watermark)" : "HD (No Watermark)",
+      url: rootPlay
+    });
+  }
+
+  const rootWmPlay =
+    typeof payload.wmplay === "string"
+      ? payload.wmplay
+      : typeof payload.wm_play_url === "string"
+        ? payload.wm_play_url
+        : typeof payload.wmPlayUrl === "string"
+          ? payload.wmPlayUrl
+          : typeof payload.watermark_url === "string"
+            ? payload.watermark_url
+            : typeof payload.watermarkUrl === "string"
+              ? payload.watermarkUrl
+              : null;
+  if (rootWmPlay) {
+    addItem({
+      format: "mp4",
+      hasAudio: true,
+      quality: "With Watermark",
+      url: rootWmPlay
+    });
+  }
+
+  // 2. Generic root video / download URLs
+  const rootVideoUrl =
+    typeof payload.video_url === "string"
+      ? payload.video_url
+      : typeof payload.videoUrl === "string"
+        ? payload.videoUrl
+        : typeof payload.download_url === "string"
+          ? payload.download_url
+          : typeof payload.downloadUrl === "string"
+            ? payload.downloadUrl
+            : null;
+  if (rootVideoUrl) {
+    addItem({
+      format: "mp4",
+      hasAudio: true,
+      quality: "HD Video",
+      url: rootVideoUrl
+    });
+  }
+
+  // 3. Cobalt status: "tunnel" | "redirect"
   if (typeof payload.url === "string" && payload.url.startsWith("http")) {
-    items.push({
+    addItem({
       format: "mp4",
       hasAudio: true,
       quality: "Default Quality",
@@ -55,14 +150,14 @@ function normalizeMediaItems(payload: Record<string, unknown>, _platformSlug: st
     });
   }
 
-  // 2. Cobalt status: "picker" (picker items)
+  // 4. Cobalt status: "picker" (picker items)
   if (Array.isArray(payload.picker)) {
     for (const p of payload.picker) {
       if (typeof p === "object" && p !== null && typeof (p as Record<string, unknown>).url === "string") {
         const pObj = p as Record<string, unknown>;
         const pUrl = String(pObj.url);
         const pType = String(pObj.type ?? "video");
-        items.push({
+        addItem({
           format: pType === "photo" ? "image" : "mp4",
           hasAudio: pType !== "photo",
           quality: String(pObj.thumb ? "Thumbnail" : "HD Quality"),
@@ -72,19 +167,48 @@ function normalizeMediaItems(payload: Record<string, unknown>, _platformSlug: st
     }
   }
 
-  let videoHeaders: Record<string, string> | undefined;
-
-  // 3. Object-based media (Kyzzz / Tikwm / similar providers)
+  // 5. Nested media object (Kyzzz / Tikwm / similar providers)
   if (typeof payload.media === "object" && payload.media !== null && !Array.isArray(payload.media)) {
     const mediaObj = payload.media as Record<string, unknown>;
+
+    // Video object inside media
     if (typeof mediaObj.video === "object" && mediaObj.video !== null) {
       const v = mediaObj.video as Record<string, unknown>;
-      const vUrl = typeof v.downloadUrl === "string" ? v.downloadUrl : typeof v.directStreamUrl === "string" ? v.directStreamUrl : typeof v.url === "string" ? v.url : null;
       videoHeaders = typeof v.headers === "object" && v.headers !== null ? (v.headers as Record<string, string>) : undefined;
 
-      if (vUrl && vUrl.startsWith("http")) {
+      const vHd = typeof v.hdplay === "string" ? v.hdplay : typeof v.hd === "string" ? v.hd : null;
+      if (vHd) {
+        addItem({
+          format: "mp4",
+          hasAudio: true,
+          headers: videoHeaders,
+          quality: "HD (No Watermark)",
+          url: vHd
+        });
+      }
+
+      const vUrl =
+        typeof v.downloadUrl === "string"
+          ? v.downloadUrl
+          : typeof v.download_url === "string"
+            ? v.download_url
+            : typeof v.directStreamUrl === "string"
+              ? v.directStreamUrl
+              : typeof v.play === "string"
+                ? v.play
+                : typeof v.playUrl === "string"
+                  ? v.playUrl
+                  : typeof v.play_url === "string"
+                    ? v.play_url
+                    : typeof v.noWatermark === "string"
+                      ? v.noWatermark
+                      : typeof v.url === "string"
+                        ? v.url
+                        : null;
+
+      if (vUrl) {
         const vQuality = typeof v.quality === "string" && v.quality.trim().length > 0 ? v.quality.toUpperCase() : "HD (No Watermark)";
-        items.push({
+        addItem({
           format: typeof v.format === "string" ? v.format : "mp4",
           hasAudio: true,
           headers: videoHeaders,
@@ -92,38 +216,227 @@ function normalizeMediaItems(payload: Record<string, unknown>, _platformSlug: st
           url: vUrl
         });
       }
-      if (typeof v.watermarkUrl === "string" && v.watermarkUrl.startsWith("http")) {
-        items.push({
+
+      const vWm =
+        typeof v.watermarkUrl === "string"
+          ? v.watermarkUrl
+          : typeof v.watermark_url === "string"
+            ? v.watermark_url
+            : typeof v.wmplay === "string"
+              ? v.wmplay
+              : typeof v.watermark === "string"
+                ? v.watermark
+                : null;
+
+      if (vWm) {
+        addItem({
           format: typeof v.format === "string" ? v.format : "mp4",
           hasAudio: true,
           headers: videoHeaders,
           quality: "With Watermark",
-          url: v.watermarkUrl
+          url: vWm
         });
       }
     }
 
-    if (Array.isArray(mediaObj.images)) {
-      for (const img of mediaObj.images) {
-        const imgUrl = typeof img === "string" ? img : (typeof img === "object" && img !== null && typeof (img as Record<string, unknown>).url === "string") ? (img as Record<string, unknown>).url as string : null;
-        if (imgUrl && imgUrl.startsWith("http")) {
-          items.push({
+    // Direct play URLs inside media
+    const mediaPlay = typeof mediaObj.play === "string" ? mediaObj.play : typeof mediaObj.play_url === "string" ? mediaObj.play_url : null;
+    if (mediaPlay) {
+      addItem({
+        format: "mp4",
+        hasAudio: true,
+        quality: "HD (No Watermark)",
+        url: mediaPlay
+      });
+    }
+
+    // Images inside media
+    const mediaImages = Array.isArray(mediaObj.images) ? mediaObj.images : Array.isArray(mediaObj.photos) ? mediaObj.photos : null;
+    if (mediaImages) {
+      mediaImages.forEach((img, idx) => {
+        const imgObj = typeof img === "object" && img !== null ? (img as Record<string, unknown>) : null;
+        const imgUrl =
+          typeof img === "string"
+            ? img
+            : imgObj
+              ? typeof imgObj.url === "string"
+                ? imgObj.url
+                : typeof imgObj.display_url === "string"
+                  ? imgObj.display_url
+                  : typeof imgObj.image_url === "string"
+                    ? imgObj.image_url
+                    : null
+              : null;
+        if (imgUrl) {
+          addItem({
             format: "image",
             hasAudio: false,
-            quality: "HD Image",
+            quality: mediaImages.length > 1 ? `Foto ${idx + 1} (HD)` : "HD Image",
             url: imgUrl
           });
         }
+      });
+    }
+
+    // Music inside media
+    if (typeof mediaObj.music === "object" && mediaObj.music !== null) {
+      const m = mediaObj.music as Record<string, unknown>;
+      const mUrl = typeof m.playUrl === "string" ? m.playUrl : typeof m.play === "string" ? m.play : typeof m.url === "string" ? m.url : null;
+      if (mUrl) {
+        addItem({
+          format: "mp3",
+          hasAudio: true,
+          headers: videoHeaders,
+          quality: "Audio (MP3)",
+          url: mUrl
+        });
+      }
+    } else if (typeof mediaObj.music === "string") {
+      addItem({
+        format: "mp3",
+        hasAudio: true,
+        headers: videoHeaders,
+        quality: "Audio (MP3)",
+        url: mediaObj.music
+      });
+    }
+  }
+
+  // 6. Root video object (when video is an object, not a string)
+  if (typeof payload.video === "object" && payload.video !== null) {
+    const v = payload.video as Record<string, unknown>;
+    const vUrl =
+      typeof v.downloadUrl === "string"
+        ? v.downloadUrl
+        : typeof v.play === "string"
+          ? v.play
+          : typeof v.playUrl === "string"
+            ? v.playUrl
+            : typeof v.url === "string"
+              ? v.url
+              : typeof v.noWatermark === "string"
+                ? v.noWatermark
+                : null;
+    if (vUrl) {
+      addItem({
+        format: "mp4",
+        hasAudio: true,
+        quality: "HD (No Watermark)",
+        url: vUrl
+      });
+    }
+    const vWm =
+      typeof v.watermarkUrl === "string"
+        ? v.watermarkUrl
+        : typeof v.wmplay === "string"
+          ? v.wmplay
+          : typeof v.watermark === "string"
+            ? v.watermark
+            : null;
+    if (vWm) {
+      addItem({
+        format: "mp4",
+        hasAudio: true,
+        quality: "With Watermark",
+        url: vWm
+      });
+    }
+  } else if (typeof payload.video === "string" && payload.video.startsWith("http")) {
+    addItem({
+      format: "mp4",
+      hasAudio: true,
+      quality: "Video (MP4)",
+      url: payload.video
+    });
+  }
+
+  // 7. Root images / photo slide array
+  const rootImages = Array.isArray(payload.images) ? payload.images : Array.isArray(payload.photos) ? payload.photos : null;
+  if (rootImages) {
+    rootImages.forEach((img, idx) => {
+      const imgObj = typeof img === "object" && img !== null ? (img as Record<string, unknown>) : null;
+      const imgUrl =
+        typeof img === "string"
+          ? img
+          : imgObj
+            ? typeof imgObj.url === "string"
+              ? imgObj.url
+              : typeof imgObj.display_url === "string"
+                ? imgObj.display_url
+                : typeof imgObj.image_url === "string"
+                  ? imgObj.image_url
+                  : null
+            : null;
+      if (imgUrl) {
+        addItem({
+          format: "image",
+          hasAudio: false,
+          quality: rootImages.length > 1 ? `Foto ${idx + 1} (HD)` : "HD Image",
+          url: imgUrl
+        });
+      }
+    });
+  }
+
+  // 8. Standard formats / media / links / urls / downloads arrays
+  const formatsArray = Array.isArray(payload.media)
+    ? payload.media
+    : Array.isArray(payload.formats)
+      ? payload.formats
+      : Array.isArray(payload.links)
+        ? payload.links
+        : Array.isArray(payload.urls)
+          ? payload.urls
+          : Array.isArray(payload.downloads)
+            ? payload.downloads
+            : null;
+
+  if (formatsArray !== null) {
+    for (const f of formatsArray) {
+      if (typeof f === "object" && f !== null) {
+        const item = f as Record<string, unknown>;
+        const url = typeof item.url === "string" ? item.url : typeof item.link === "string" ? item.link : null;
+        if (url) {
+          addItem({
+            format: typeof item.format === "string" ? item.format : "mp4",
+            hasAudio: item.hasAudio !== false,
+            quality: typeof item.quality === "string" ? item.quality : typeof item.resolution === "string" ? item.resolution : "Standard",
+            sizeBytes: typeof item.size === "number" ? item.size : typeof item.sizeBytes === "number" ? item.sizeBytes : undefined,
+            url
+          });
+        }
+      } else if (typeof f === "string") {
+        addItem({
+          format: "mp4",
+          hasAudio: true,
+          quality: "Standard",
+          url: f
+        });
       }
     }
   }
 
-  // 4. Object-based music / audio (from Kyzzz / Tikwm)
-  if (typeof payload.music === "object" && payload.music !== null) {
+  // 9. Root music / audio
+  if (typeof payload.music === "string" && payload.music.startsWith("http")) {
+    addItem({
+      format: "mp3",
+      hasAudio: true,
+      headers: videoHeaders,
+      quality: "Audio (MP3)",
+      url: payload.music
+    });
+  } else if (typeof payload.music === "object" && payload.music !== null) {
     const m = payload.music as Record<string, unknown>;
-    const mUrl = typeof m.playUrl === "string" ? m.playUrl : typeof m.url === "string" ? m.url : null;
-    if (mUrl && mUrl.startsWith("http")) {
-      items.push({
+    const mUrl =
+      typeof m.playUrl === "string"
+        ? m.playUrl
+        : typeof m.play === "string"
+          ? m.play
+          : typeof m.url === "string"
+            ? m.url
+            : null;
+    if (mUrl) {
+      addItem({
         format: "mp3",
         hasAudio: true,
         headers: videoHeaders,
@@ -133,63 +446,60 @@ function normalizeMediaItems(payload: Record<string, unknown>, _platformSlug: st
     }
   }
 
-  // 5. Array of images (slides / gallery)
-  if (Array.isArray(payload.images)) {
-    for (const img of payload.images) {
-      const imgUrl = typeof img === "string" ? img : (typeof img === "object" && img !== null && typeof (img as Record<string, unknown>).url === "string") ? (img as Record<string, unknown>).url as string : null;
-      if (imgUrl && imgUrl.startsWith("http")) {
-        items.push({
-          format: "image",
-          hasAudio: false,
-          quality: "HD Image",
-          url: imgUrl
-        });
-      }
+  if (typeof payload.music_info === "object" && payload.music_info !== null) {
+    const mi = payload.music_info as Record<string, unknown>;
+    const miUrl =
+      typeof mi.play === "string"
+        ? mi.play
+        : typeof mi.playUrl === "string"
+          ? mi.playUrl
+          : typeof mi.url === "string"
+            ? mi.url
+            : null;
+    if (miUrl) {
+      addItem({
+        format: "mp3",
+        hasAudio: true,
+        headers: videoHeaders,
+        quality: "Audio (MP3)",
+        url: miUrl
+      });
     }
   }
 
-  // 6. Standard array of formats/media
-  const formatsArray = Array.isArray(payload.media)
-    ? payload.media
-    : Array.isArray(payload.formats)
-      ? payload.formats
-      : Array.isArray(payload.links)
-        ? payload.links
-        : null;
-
-  if (formatsArray !== null) {
-    for (const f of formatsArray) {
-      if (typeof f === "object" && f !== null) {
-        const item = f as Record<string, unknown>;
-        const url = typeof item.url === "string" ? item.url : typeof item.link === "string" ? item.link : null;
-        if (url && url.startsWith("http")) {
-          items.push({
-            format: typeof item.format === "string" ? item.format : "mp4",
-            hasAudio: item.hasAudio !== false,
-            quality: typeof item.quality === "string" ? item.quality : typeof item.resolution === "string" ? item.resolution : "Standard",
-            sizeBytes: typeof item.size === "number" ? item.size : typeof item.sizeBytes === "number" ? item.sizeBytes : undefined,
-            url
-          });
-        }
-      }
-    }
-  }
-
-  // 7. Object format: { video: "...", audio: "..." }
-  if (typeof payload.video === "string" && payload.video.startsWith("http")) {
-    items.push({
-      format: "mp4",
-      hasAudio: true,
-      quality: "Video (MP4)",
-      url: payload.video
-    });
-  }
   if (typeof payload.audio === "string" && payload.audio.startsWith("http")) {
-    items.push({
+    addItem({
       format: "mp3",
       hasAudio: true,
       quality: "Audio (MP3)",
       url: payload.audio
+    });
+  } else if (typeof payload.audio === "object" && payload.audio !== null) {
+    const a = payload.audio as Record<string, unknown>;
+    const aUrl =
+      typeof a.url === "string"
+        ? a.url
+        : typeof a.playUrl === "string"
+          ? a.playUrl
+          : typeof a.play === "string"
+            ? a.play
+            : null;
+    if (aUrl) {
+      addItem({
+        format: "mp3",
+        hasAudio: true,
+        quality: "Audio (MP3)",
+        url: aUrl
+      });
+    }
+  }
+
+  if (typeof payload.audio_url === "string" && payload.audio_url.startsWith("http")) {
+    addItem({
+      format: "mp3",
+      hasAudio: true,
+      quality: "Audio (MP3)",
+      url: payload.audio_url
     });
   }
 

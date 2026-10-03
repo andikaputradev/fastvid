@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Monitor, Moon, Sun } from "lucide-react";
 import { useThemeStore, type Theme } from "../../lib/theme";
 import { cn } from "../../lib/utils";
@@ -14,6 +15,13 @@ const themeOptions: Array<{
 
 export function ThemeToggle({ className }: { className?: string }) {
   const { theme, setTheme } = useThemeStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const activeTheme = mounted ? theme : "system";
 
   return (
     <div
@@ -26,7 +34,7 @@ export function ThemeToggle({ className }: { className?: string }) {
     >
       {themeOptions.map((option) => {
         const Icon = option.icon;
-        const isActive = theme === option.value;
+        const isActive = activeTheme === option.value;
 
         return (
           <button
@@ -34,6 +42,7 @@ export function ThemeToggle({ className }: { className?: string }) {
             type="button"
             role="radio"
             aria-checked={isActive}
+            suppressHydrationWarning
             aria-label={option.label}
             title={option.label}
             onClick={() => setTheme(option.value)}
