@@ -1,7 +1,24 @@
 export const ADMIN_CSRF_COOKIE_NAME = "fastvid_admin_csrf";
 export const LEGACY_ADMIN_CSRF_COOKIE_NAME = "vidsaveid_admin_csrf";
 
+let inMemoryCsrfToken: string | null = null;
+
+export function setAdminCsrfToken(token: string | null): void {
+  inMemoryCsrfToken = token;
+  if (typeof window !== "undefined" && window.sessionStorage) {
+    if (token !== null && token.length > 0) {
+      window.sessionStorage.setItem("fastvid_admin_csrf", token);
+    } else {
+      window.sessionStorage.removeItem("fastvid_admin_csrf");
+    }
+  }
+}
+
 export function readCookie(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
   const cookie = document.cookie
     .split(";")
     .map((part) => part.trim())
@@ -15,5 +32,17 @@ export function readCookie(name: string): string | null {
 }
 
 export function readAdminCsrfToken(): string | null {
+  if (inMemoryCsrfToken !== null && inMemoryCsrfToken.length > 0) {
+    return inMemoryCsrfToken;
+  }
+
+  if (typeof window !== "undefined" && window.sessionStorage) {
+    const sessionToken = window.sessionStorage.getItem("fastvid_admin_csrf");
+    if (sessionToken !== null && sessionToken.length > 0) {
+      inMemoryCsrfToken = sessionToken;
+      return sessionToken;
+    }
+  }
+
   return readCookie(ADMIN_CSRF_COOKIE_NAME) ?? readCookie(LEGACY_ADMIN_CSRF_COOKIE_NAME);
 }

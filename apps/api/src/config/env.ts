@@ -35,7 +35,8 @@ const envSchema = z.object({
     .refine((value) => Buffer.from(value, "base64").byteLength === 32, {
       message: "API_KEY_ENCRYPTION_KEY must decode to 32 bytes"
     }),
-  ADMIN_SESSION_SECRET: z.string().min(32)
+  ADMIN_SESSION_SECRET: z.string().min(32),
+  COOKIE_DOMAIN: z.string().optional()
 });
 
 export const env = envSchema.parse({

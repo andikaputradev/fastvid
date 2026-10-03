@@ -184,4 +184,46 @@ describe("adminApi", () => {
     expect(result.logs[0]?.response_time_ms).toBe(42);
     expect(result.pagination).toEqual({ limit: 25, offset: 0 });
   });
+
+  it("captures csrfToken from login and uses it on mutations", async () => {
+    document.cookie = "fastvid_admin_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.cookie = "vidsaveid_admin_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+
+    mockFetch({
+      success: true,
+      data: {
+        admin: { id: "1", emailHash: "a".repeat(64), role: "admin" },
+        csrfToken: "login-csrf-token-12345"
+      }
+    });
+
+    await adminApi.login({ email: "admin@example.com", password: "password" });
+
+    const mutationFetch = mockFetch({ success: true, data: { platform: { id: "p1" } } });
+    await adminApi.createPlatform({
+      name: "NewPlatform",
+      slug: "newplatform",
+      base_domains: ["example.com"]
+    });
+
+    expect(requestHeaders(mutationFetch)["x-csrf-token"]).toBe("login-csrf-token-12345");
+  });
+
+  it("throws CSRF_TOKEN_MISSING without masking as NETWORK_ERROR when csrf token is missing", async () => {
+    document.cookie = "fastvid_admin_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.cookie = "vidsaveid_admin_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    const { setAdminCsrfToken } = await import("./csrf");
+    setAdminCsrfToken(null);
+
+    await expect(
+      adminApi.createPlatform({
+        name: "NewPlatform",
+        slug: "newplatform",
+        base_domains: ["example.com"]
+      })
+    ).rejects.toMatchObject({
+      code: "CSRF_TOKEN_MISSING",
+      status: 403
+    });
+  });
 });

@@ -27,6 +27,7 @@ export interface CreatedAdminSession {
 }
 
 export interface CookieOptions {
+  domain?: string;
   httpOnly?: boolean;
   maxAgeSeconds?: number;
 }
@@ -132,8 +133,33 @@ export function parseCookieHeader(cookieHeader: string | undefined): Map<string,
   return cookies;
 }
 
+export function defaultCookieDomain(): string | undefined {
+  if (env.COOKIE_DOMAIN !== undefined && env.COOKIE_DOMAIN.length > 0) {
+    return env.COOKIE_DOMAIN;
+  }
+
+  if (env.NODE_ENV === "production") {
+    for (const rawOrigin of env.WEB_ORIGIN.split(",")) {
+      try {
+        const hostname = new URL(rawOrigin.trim()).hostname;
+        if (hostname === "fastvid.my.id" || hostname === "www.fastvid.my.id") {
+          return "fastvid.my.id";
+        }
+      } catch {
+        // ignore invalid URL
+      }
+    }
+  }
+
+  return undefined;
+}
+
 export function serializeCookie(name: string, value: string, options: CookieOptions = {}): string {
   const parts = [`${name}=${encodeURIComponent(value)}`, "Path=/", "SameSite=Lax"];
+
+  if (options.domain !== undefined && options.domain.length > 0) {
+    parts.push(`Domain=${options.domain}`);
+  }
 
   if (options.httpOnly) {
     parts.push("HttpOnly");
@@ -150,8 +176,16 @@ export function serializeCookie(name: string, value: string, options: CookieOpti
   return parts.join("; ");
 }
 
-export function clearCookie(name: string): string {
+export function clearCookie(name: string, options: CookieOptions = {}): string {
+  const domain =
+    options.domain ??
+    (name === ADMIN_CSRF_COOKIE_NAME || name === LEGACY_ADMIN_CSRF_COOKIE_NAME
+      ? defaultCookieDomain()
+      : undefined);
+
   return serializeCookie(name, "", {
+    ...options,
+    ...(domain !== undefined ? { domain } : {}),
     maxAgeSeconds: 0
   });
 }
@@ -164,7 +198,10 @@ export function sessionCookie(token: string): string {
 }
 
 export function csrfCookie(csrfToken: string): string {
+  const domain = defaultCookieDomain();
+
   return serializeCookie(ADMIN_CSRF_COOKIE_NAME, csrfToken, {
+    ...(domain !== undefined ? { domain } : {}),
     maxAgeSeconds: SESSION_MAX_AGE_SECONDS
   });
 }

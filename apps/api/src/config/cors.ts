@@ -60,6 +60,8 @@ export async function registerCors(app: FastifyInstance) {
       callback(null, isCorsOriginAllowed(origin));
     },
     credentials: true,
-    methods: ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"]
+    methods: ["DELETE", "GET", "OPTIONS", "PATCH", "POST", "PUT"],
+    allowedHeaders: ["Content-Type", "x-csrf-token", "Authorization", "x-request-id"],
+    exposedHeaders: ["x-csrf-token", "x-request-id"]
   });
 }

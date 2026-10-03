@@ -3,6 +3,18 @@ import ReactDOM, { hydrateRoot } from "react-dom/client";
 import { App } from "./app/App";
 import "./styles/globals.css";
 
+if (typeof window !== "undefined") {
+  window.addEventListener("vite:preloadError", () => {
+    const reloadKey = "fastvid_preload_reload";
+    const lastReload = sessionStorage.getItem(reloadKey);
+    const now = Date.now();
+    if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+      sessionStorage.setItem(reloadKey, String(now));
+      window.location.reload();
+    }
+  });
+}
+
 const root = document.getElementById("root");
 
 if (!root) {

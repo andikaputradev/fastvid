@@ -1,4 +1,4 @@
-import { readAdminCsrfToken } from "./csrf";
+import { readAdminCsrfToken, setAdminCsrfToken } from "./csrf";
 import { getApiBaseUrl } from "./env";
 
 const mutationMethods = new Set(["DELETE", "PATCH", "POST", "PUT"]);
@@ -578,6 +578,17 @@ export async function adminRequest<TData>(
   const method = init.method ?? "GET";
   const csrf = init.csrf ?? true;
   const { csrf: _csrf, ...requestInit } = init;
+
+  let headers: HeadersInit;
+  try {
+    headers = headersFor(method, init.headers, csrf);
+  } catch (error) {
+    if (error instanceof AdminApiError) {
+      throw error;
+    }
+    throw new AdminApiError("CSRF_TOKEN_MISSING", "Admin request could not be verified.", 403);
+  }
+
   let response: Response;
 
   try {
@@ -585,10 +596,15 @@ export async function adminRequest<TData>(
       ...requestInit,
       credentials: "include",
       method,
-      headers: headersFor(method, init.headers, csrf)
+      headers
     });
   } catch {
     throw new AdminApiError("NETWORK_ERROR", "Unable to reach the admin API.", 0);
+  }
+
+  const responseCsrf = response.headers?.get?.("x-csrf-token");
+  if (responseCsrf) {
+    setAdminCsrfToken(responseCsrf);
   }
 
   let payload: unknown;
@@ -618,17 +634,37 @@ function jsonBody(body: unknown): RequestInit {
 }
 
 export const adminApi = {
-  login: (body: { email: string; password: string }) =>
-    adminRequest<{ admin: AdminIdentity }>("/api/v1/admin/auth/login", {
+  login: async (body: { email: string; password: string }) => {
+    const data = await adminRequest<{ admin: AdminIdentity; csrfToken?: string }>("/api/v1/admin/auth/login", {
       csrf: false,
       method: "POST",
       ...jsonBody(body)
-    }),
-  logout: () =>
-    adminRequest<{ loggedOut: boolean }>("/api/v1/admin/auth/logout", {
-      method: "POST"
-    }),
-  me: () => adminRequest<{ admin: AdminIdentity }>("/api/v1/admin/auth/me"),
+    });
+
+    if (data.csrfToken) {
+      setAdminCsrfToken(data.csrfToken);
+    }
+
+    return { admin: data.admin };
+  },
+  logout: async () => {
+    try {
+      return await adminRequest<{ loggedOut: boolean }>("/api/v1/admin/auth/logout", {
+        method: "POST"
+      });
+    } finally {
+      setAdminCsrfToken(null);
+    }
+  },
+  me: async () => {
+    const data = await adminRequest<{ admin: AdminIdentity; csrfToken?: string }>("/api/v1/admin/auth/me");
+
+    if (data.csrfToken) {
+      setAdminCsrfToken(data.csrfToken);
+    }
+
+    return { admin: data.admin };
+  },
   status: async () => {
     const data = recordFrom(await adminRequest<unknown>("/api/v1/status"));
     const siteName = nullableString(read(data, "siteName", "site_name"));

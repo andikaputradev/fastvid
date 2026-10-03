@@ -60,3 +60,26 @@ test("Fastify CORS preflight allows local 127 origin with credentials", async ()
     await app.close();
   }
 });
+
+test("API sets Cross-Origin-Resource-Policy to cross-origin and exposes x-csrf-token", async () => {
+  const { buildApp } = await import("../app.js");
+  const app = await buildApp({ logger: false });
+
+  try {
+    const response = await app.inject({
+      headers: {
+        origin: "http://127.0.0.1:5173"
+      },
+      method: "GET",
+      url: "/health"
+    });
+
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.headers["cross-origin-resource-policy"], "cross-origin");
+    assert.equal(response.headers["access-control-allow-origin"], "http://127.0.0.1:5173");
+    assert.equal(response.headers["access-control-expose-headers"], "x-csrf-token, x-request-id");
+  } finally {
+    await app.close();
+  }
+});
+
