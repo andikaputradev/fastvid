@@ -575,25 +575,37 @@ export async function adminRequest<TData>(
   const { csrf: _csrf, ...requestInit } = init;
 
   if (csrf && mutationMethods.has(method.toUpperCase())) {
-    const existingToken = readAdminCsrfToken();
+    let existingToken = readAdminCsrfToken();
     if (!existingToken) {
-      try {
-        const csrfRes = await fetch(`${getApiBaseUrl()}/api/v1/admin/auth/csrf`, {
-          credentials: "include"
-        });
-        if (csrfRes.ok) {
-          const headerToken = csrfRes.headers?.get?.("x-csrf-token");
-          if (headerToken) {
-            setAdminCsrfToken(headerToken);
-          } else {
+      const endpoints = [
+        "/api/v1/admin/auth/csrf",
+        "/api/v1/admin/csrf",
+        "/api/v1/admin/auth/me",
+        "/api/v1/admin/me"
+      ];
+
+      for (const endpoint of endpoints) {
+        try {
+          const csrfRes = await fetch(`${getApiBaseUrl()}${endpoint}`, {
+            credentials: "include"
+          });
+          if (csrfRes.ok) {
+            const headerToken = csrfRes.headers?.get?.("x-csrf-token");
+            if (headerToken) {
+              setAdminCsrfToken(headerToken);
+              existingToken = headerToken;
+              break;
+            }
             const body: unknown = await csrfRes.json();
             if (isRecord(body) && isRecord(body.data) && typeof body.data.csrfToken === "string") {
               setAdminCsrfToken(body.data.csrfToken);
+              existingToken = body.data.csrfToken;
+              break;
             }
           }
+        } catch {
+          // Fall through to next endpoint
         }
-      } catch {
-        // Fall through to headersFor
       }
     }
   }
@@ -689,14 +701,22 @@ export const adminApi = {
     return { admin: data.admin };
   },
   refreshCsrfToken: async (): Promise<string | null> => {
-    try {
-      const data = await adminRequest<{ csrfToken?: string }>("/api/v1/admin/auth/csrf");
-      if (data && typeof data === "object" && "csrfToken" in data && typeof data.csrfToken === "string") {
-        setAdminCsrfToken(data.csrfToken);
-        return data.csrfToken;
+    const endpoints = [
+      "/api/v1/admin/auth/csrf",
+      "/api/v1/admin/csrf",
+      "/api/v1/admin/auth/me",
+      "/api/v1/admin/me"
+    ];
+    for (const endpoint of endpoints) {
+      try {
+        const data = await adminRequest<{ csrfToken?: string }>(endpoint, { csrf: false });
+        if (data && typeof data === "object" && "csrfToken" in data && typeof data.csrfToken === "string") {
+          setAdminCsrfToken(data.csrfToken);
+          return data.csrfToken;
+        }
+      } catch {
+        // try next endpoint
       }
-    } catch {
-      // ignore
     }
     return readAdminCsrfToken();
   },

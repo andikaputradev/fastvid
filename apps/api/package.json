@@ -14,7 +14,8 @@
     "api:smoke": "tsx --env-file=../../.env src/smoke.ts",
     "admin:bootstrap": "tsx --env-file=../../.env src/scripts/bootstrap-admin.ts",
     "admin:smoke": "tsx --env-file=../../.env src/scripts/admin-auth-smoke.ts",
-    "start": "node --env-file=../../.env dist/server.js"
+    "start": "node dist/server.js",
+    "start:dev": "node --env-file=../../.env dist/server.js"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",

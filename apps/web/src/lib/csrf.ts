@@ -5,11 +5,17 @@ let inMemoryCsrfToken: string | null = null;
 
 export function setAdminCsrfToken(token: string | null): void {
   inMemoryCsrfToken = token;
-  if (typeof window !== "undefined" && window.sessionStorage) {
-    if (token !== null && token.length > 0) {
-      window.sessionStorage.setItem("fastvid_admin_csrf", token);
-    } else {
-      window.sessionStorage.removeItem("fastvid_admin_csrf");
+  if (typeof window !== "undefined") {
+    try {
+      if (token !== null && token.length > 0) {
+        window.sessionStorage?.setItem("fastvid_admin_csrf", token);
+        window.localStorage?.setItem("fastvid_admin_csrf", token);
+      } else {
+        window.sessionStorage?.removeItem("fastvid_admin_csrf");
+        window.localStorage?.removeItem("fastvid_admin_csrf");
+      }
+    } catch {
+      // Ignore storage access errors
     }
   }
 }
@@ -36,11 +42,21 @@ export function readAdminCsrfToken(): string | null {
     return inMemoryCsrfToken;
   }
 
-  if (typeof window !== "undefined" && window.sessionStorage) {
-    const sessionToken = window.sessionStorage.getItem("fastvid_admin_csrf");
-    if (sessionToken !== null && sessionToken.length > 0) {
-      inMemoryCsrfToken = sessionToken;
-      return sessionToken;
+  if (typeof window !== "undefined") {
+    try {
+      const sessionToken = window.sessionStorage?.getItem("fastvid_admin_csrf");
+      if (sessionToken !== null && sessionToken.length > 0) {
+        inMemoryCsrfToken = sessionToken;
+        return sessionToken;
+      }
+
+      const localToken = window.localStorage?.getItem("fastvid_admin_csrf");
+      if (localToken !== null && localToken.length > 0) {
+        inMemoryCsrfToken = localToken;
+        return localToken;
+      }
+    } catch {
+      // Ignore storage access errors
     }
   }
 

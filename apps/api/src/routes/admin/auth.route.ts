@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import {
   ADMIN_CSRF_COOKIE_NAME,
@@ -53,7 +53,7 @@ export async function adminAuthRoute(app: FastifyInstance, options: AdminAuthRou
   const requireAdminAuth = createRequireAdminAuth({ repositories });
   const requireCsrfToken = createRequireCsrfToken();
 
-  app.post("/auth/login", async (request, reply) => {
+  const handleLogin = async (request: FastifyRequest, reply: FastifyReply) => {
     const parsedBody = loginRequestSchema.safeParse(request.body);
 
     if (!parsedBody.success) {
@@ -113,62 +113,85 @@ export async function adminAuthRoute(app: FastifyInstance, options: AdminAuthRou
         csrfToken: createdSession.session.csrfToken
       }
     });
-  });
+  };
+
+  app.post("/auth/login", handleLogin);
+  app.post("/login", handleLogin);
+
+  const handleMe = async (request: FastifyRequest, reply: FastifyReply) => {
+    const admin = requireAdminContext(request);
+    reply.header("x-csrf-token", admin.csrfToken);
+
+    return reply.send({
+      success: true,
+      data: {
+        admin: publicAdmin(admin),
+        csrfToken: admin.csrfToken
+      }
+    });
+  };
 
   app.get("/auth/me", {
     preHandler: requireAdminAuth,
-    handler: async (request, reply) => {
-      const admin = requireAdminContext(request);
-      reply.header("x-csrf-token", admin.csrfToken);
-
-      return reply.send({
-        success: true,
-        data: {
-          admin: publicAdmin(admin),
-          csrfToken: admin.csrfToken
-        }
-      });
-    }
+    handler: handleMe
   });
+  app.get("/me", {
+    preHandler: requireAdminAuth,
+    handler: handleMe
+  });
+
+  const handleCsrf = async (request: FastifyRequest, reply: FastifyReply) => {
+    const admin = requireAdminContext(request);
+    reply.header("x-csrf-token", admin.csrfToken);
+    reply.header("set-cookie", [csrfCookie(admin.csrfToken)]);
+
+    return reply.send({
+      success: true,
+      data: {
+        csrfToken: admin.csrfToken
+      }
+    });
+  };
 
   app.get("/auth/csrf", {
     preHandler: requireAdminAuth,
-    handler: async (request, reply) => {
-      const admin = requireAdminContext(request);
-      reply.header("x-csrf-token", admin.csrfToken);
-      reply.header("set-cookie", [csrfCookie(admin.csrfToken)]);
-
-      return reply.send({
-        success: true,
-        data: {
-          csrfToken: admin.csrfToken
-        }
-      });
-    }
+    handler: handleCsrf
   });
+  app.get("/csrf", {
+    preHandler: requireAdminAuth,
+    handler: handleCsrf
+  });
+
+  const handleLogout = async (request: FastifyRequest, reply: FastifyReply) => {
+    const admin = requireAdminContext(request);
+
+    await logAdminAuditEvent(repositories, request, {
+      action: "LOGOUT",
+      adminUserId: admin.adminUserId,
+      adminEmailHash: admin.adminEmailHash
+    });
+
+    reply.header("set-cookie", [
+      clearCookie(ADMIN_SESSION_COOKIE_NAME),
+      clearCookie("fastvid_admin_session"),
+      clearCookie(ADMIN_CSRF_COOKIE_NAME),
+      clearCookie("fastvid_admin_csrf")
+    ]);
+
+    return reply.send({
+      success: true,
+      data: {
+        loggedOut: true
+      }
+    });
+  };
 
   app.post("/auth/logout", {
     preHandler: [requireAdminAuth, requireCsrfToken],
-    handler: async (request, reply) => {
-      const admin = requireAdminContext(request);
-
-      await logAdminAuditEvent(repositories, request, {
-        action: "LOGOUT",
-        adminUserId: admin.adminUserId,
-        adminEmailHash: admin.adminEmailHash
-      });
-
-      reply.header("set-cookie", [
-        clearCookie(ADMIN_SESSION_COOKIE_NAME),
-        clearCookie(ADMIN_CSRF_COOKIE_NAME)
-      ]);
-
-      return reply.send({
-        success: true,
-        data: {
-          loggedOut: true
-        }
-      });
-    }
+    handler: handleLogout
+  });
+  app.post("/logout", {
+    preHandler: [requireAdminAuth, requireCsrfToken],
+    handler: handleLogout
   });
 }

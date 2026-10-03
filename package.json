@@ -9,6 +9,8 @@
     "node": ">=20"
   },
   "scripts": {
+    "start": "node apps/api/dist/server.js",
+    "build:api": "pnpm --filter @vidsaveid/api... build",
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",

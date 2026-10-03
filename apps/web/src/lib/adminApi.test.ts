@@ -226,4 +226,38 @@ describe("adminApi", () => {
       status: 403
     });
   });
+
+  it("falls back to alternative endpoint when /api/v1/admin/auth/csrf is 404", async () => {
+    document.cookie = "fastvid_admin_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    document.cookie = "vidsaveid_admin_csrf=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    const { setAdminCsrfToken } = await import("./csrf");
+    setAdminCsrfToken(null);
+
+    const fetchMock = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>(
+      async (input) => {
+        const urlStr = String(input);
+        if (urlStr.endsWith("/api/v1/admin/auth/csrf")) {
+          return jsonResponse({ message: "Not Found" }, 404);
+        }
+        if (urlStr.endsWith("/api/v1/admin/csrf")) {
+          return jsonResponse({ success: true, data: { csrfToken: "fallback-token-from-csrf" } }, 200);
+        }
+        return jsonResponse({ success: true, data: { platform: { id: "p1" } } }, 200);
+      }
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    await adminApi.createPlatform({
+      name: "NewPlatform",
+      slug: "newplatform",
+      base_domains: ["example.com"]
+    });
+
+    const mutationCall = fetchMock.mock.calls.find((call) =>
+      String(call[0]).endsWith("/api/v1/admin/platforms")
+    );
+    expect((mutationCall?.[1]?.headers as Record<string, string>)?.["x-csrf-token"]).toBe(
+      "fallback-token-from-csrf"
+    );
+  });
 });

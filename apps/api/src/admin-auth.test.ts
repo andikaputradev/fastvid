@@ -496,3 +496,37 @@ test("GET /api/v1/admin/auth/csrf issues and sets CSRF token cookie and response
   }
 });
 
+test("GET /api/v1/admin/csrf alias functions identically to /api/v1/admin/auth/csrf", async () => {
+  const { repositories } = createMockRepositories();
+  const app = await buildTestApp(repositories);
+
+  try {
+    const { cookie } = await login(app);
+    const response = await inject(app, "GET", "/api/v1/admin/csrf", { cookie });
+
+    assert.equal(response.statusCode, 200);
+    const body = JSON.parse(response.body) as ApiSuccessResponse<{ csrfToken: string }>;
+    assert.equal(body.success, true);
+    assert.ok(typeof body.data?.csrfToken === "string" && body.data.csrfToken.length > 0);
+  } finally {
+    await app.close();
+  }
+});
+
+test("GET /api/v1/admin/me alias functions identically to /api/v1/admin/auth/me", async () => {
+  const { repositories } = createMockRepositories();
+  const app = await buildTestApp(repositories);
+
+  try {
+    const { cookie } = await login(app);
+    const response = await inject(app, "GET", "/api/v1/admin/me", { cookie });
+
+    assert.equal(response.statusCode, 200);
+    const body = JSON.parse(response.body) as ApiSuccessResponse<{ admin: AdminIdentity; csrfToken: string }>;
+    assert.equal(body.success, true);
+    assert.ok(typeof body.data?.csrfToken === "string" && body.data.csrfToken.length > 0);
+  } finally {
+    await app.close();
+  }
+});
+

@@ -24,7 +24,11 @@ export function createRequireAdminAuth(options: AdminAuthMiddlewareOptions = {})
   return async function requireAdminAuth(request: FastifyRequest, _reply: FastifyReply) {
     const repositories = options.repositories ?? createDefaultRepositories();
     const cookies = parseCookieHeader(request.headers.cookie);
-    const sessionToken = cookies.get(ADMIN_SESSION_COOKIE_NAME) ?? cookies.get(LEGACY_ADMIN_SESSION_COOKIE_NAME);
+    const sessionToken =
+      cookies.get(ADMIN_SESSION_COOKIE_NAME) ??
+      cookies.get("fastvid_admin_session") ??
+      cookies.get(LEGACY_ADMIN_SESSION_COOKIE_NAME) ??
+      cookies.get("vidsaveid_admin_session");
     const session = verifyAdminSessionToken(sessionToken);
 
     if (session === null) {
