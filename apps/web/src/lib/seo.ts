@@ -1,11 +1,11 @@
-import { readPublicEnv } from "./env";
+import { getSiteBaseUrl } from "./env";
 
 export const siteName = "FastVid";
 export const defaultSeoTitle = "FastVid - Download Video Sosmed Tanpa Login";
 export const defaultTagline = "Simpan video publik dari berbagai platform dengan cepat, aman, dan praktis.";
 
 export function siteUrl(): string {
-  return readPublicEnv("VITE_SITE_URL", "https://fastvid.my.id").replace(/\/$/u, "");
+  return getSiteBaseUrl();
 }
 
 export function canonicalUrl(path: string): string {

@@ -1,6 +1,6 @@
 import { readAdminCsrfToken } from "./csrf";
+import { getApiBaseUrl } from "./env";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4000";
 const mutationMethods = new Set(["DELETE", "PATCH", "POST", "PUT"]);
 
 export class AdminApiError extends Error {
@@ -581,7 +581,7 @@ export async function adminRequest<TData>(
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
       ...requestInit,
       credentials: "include",
       method,

@@ -4,7 +4,26 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   API_HOST: z.string().default("0.0.0.0"),
   API_PORT: z.coerce.number().int().positive().default(4000),
-  WEB_ORIGIN: z.string().url().default("http://localhost:5173"),
+  WEB_ORIGIN: z
+    .string()
+    .refine(
+      (val) => {
+        const origins = val.split(",").map((s) => s.trim()).filter(Boolean);
+        return (
+          origins.length > 0 &&
+          origins.every((origin) => {
+            try {
+              new URL(origin);
+              return true;
+            } catch {
+              return false;
+            }
+          })
+        );
+      },
+      { message: "WEB_ORIGIN must contain valid URL(s) separated by commas" }
+    )
+    .default("http://localhost:5173"),
   DATABASE_URL: z.string().optional(),
   PUBLIC_API_BASE_URL: z.string().url().optional(),
   SUPABASE_URL: z.string().url().optional(),

@@ -1,9 +1,9 @@
 import type { PublicAdSlot, PublicCustomAd } from "@vidsaveid/shared";
-import { readPublicEnv } from "./env";
+import { getApiBaseUrl } from "./env";
 
 export type { PublicAdSlot, PublicCustomAd };
 
-export const API_BASE_URL = readPublicEnv("VITE_API_BASE_URL", "http://localhost:4000");
+export const API_BASE_URL = getApiBaseUrl();
 
 export class PublicApiError extends Error {
   code: string;
@@ -110,7 +110,7 @@ async function request<TData>(path: string, init?: RequestInit): Promise<TData> 
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE_URL}${path}`, {
+    response = await fetch(`${getApiBaseUrl()}${path}`, {
       headers: {
         "content-type": "application/json",
         ...init?.headers

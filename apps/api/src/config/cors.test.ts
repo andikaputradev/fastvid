@@ -25,11 +25,18 @@ test("development CORS allows common Vite local origins", async () => {
   assert.equal(origins.has("http://127.0.0.1:4173"), true);
 });
 
-test("production CORS stays strict for non-localhost origins", async () => {
+test("production CORS allows fastvid.my.id and www subdomain automatically", async () => {
   const { allowedCorsOrigins } = await import("./cors.js");
   const origins = allowedCorsOrigins("https://fastvid.my.id", "production");
 
-  assert.deepEqual([...origins], ["https://fastvid.my.id"]);
+  assert.deepEqual([...origins], ["https://fastvid.my.id", "https://www.fastvid.my.id"]);
+});
+
+test("production CORS supports comma-separated origins", async () => {
+  const { allowedCorsOrigins } = await import("./cors.js");
+  const origins = allowedCorsOrigins("https://custom.example.com, https://other.example.com", "production");
+
+  assert.deepEqual([...origins], ["https://custom.example.com", "https://other.example.com"]);
 });
 
 test("Fastify CORS preflight allows local 127 origin with credentials", async () => {

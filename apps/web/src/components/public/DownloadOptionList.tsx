@@ -1,5 +1,6 @@
 import { Download, Music, Video } from "lucide-react";
-import { API_BASE_URL, type DownloadResponse } from "../../lib/api";
+import type { DownloadResponse } from "../../lib/api";
+import { getApiBaseUrl } from "../../lib/env";
 
 interface DownloadOptionListProps {
   result: DownloadResponse;
@@ -38,7 +39,7 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
           const formattedSize = formatBytes(item.sizeBytes);
           const rawUrl = item.url;
           const downloadHref = rawUrl.startsWith("/")
-            ? `${API_BASE_URL.replace(/\/$/, "")}${rawUrl}`
+            ? `${getApiBaseUrl()}${rawUrl}`
             : rawUrl;
 
           return (

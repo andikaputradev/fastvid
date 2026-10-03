@@ -26,6 +26,10 @@ export function allowedCorsOrigins(webOrigin: string, nodeEnv: string): Set<stri
       const parsedOrigin = new URL(origin);
       if (isLoopbackHost(parsedOrigin.hostname)) {
         origins.add(originWithHostname(parsedOrigin, loopbackAlias(parsedOrigin.hostname)));
+      } else if (parsedOrigin.hostname === "fastvid.my.id") {
+        origins.add(`${parsedOrigin.protocol}//www.fastvid.my.id${parsedOrigin.port ? `:${parsedOrigin.port}` : ""}`);
+      } else if (parsedOrigin.hostname === "www.fastvid.my.id") {
+        origins.add(`${parsedOrigin.protocol}//fastvid.my.id${parsedOrigin.port ? `:${parsedOrigin.port}` : ""}`);
       }
     } catch {
       // Ignore invalid URL
