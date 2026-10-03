@@ -28,19 +28,19 @@ export function SystemStatusPage() {
       {health.error ? <FormError error={health.error} /> : null}
       {status.error ? <FormError error={status.error} /> : null}
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-md border border-border bg-white p-4">
+        <div className="rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm">
           <div className="flex items-center gap-2 text-primary">
             <Activity className="h-5 w-5" aria-hidden="true" />
-            <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Health</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Health</h2>
           </div>
-          <div className="mt-4 text-2xl font-bold text-slate-950">{health.data?.status ?? "unknown"}</div>
+          <div className="mt-4 text-2xl font-bold text-foreground">{health.data?.status ?? "unknown"}</div>
         </div>
-        <div className="rounded-md border border-border bg-white p-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Public Status</h2>
+        <div className="rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm">
+          <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Public Status</h2>
           <div className="mt-4">
             <StatusBadge value={status.data?.status ?? "unknown"} />
           </div>
-          <div className="mt-3 text-sm text-slate-600">
+          <div className="mt-3 text-sm text-muted-foreground">
             Providers enabled: {status.data?.providersEnabled ? "yes" : "no"}
           </div>
         </div>

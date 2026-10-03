@@ -120,7 +120,7 @@ export function SiteSettingsPage() {
       <AdminNoIndex title="Settings" />
       <AdminPageHeader title="Settings" description="Site metadata, maintenance, Turnstile, and public rate limit." />
       <form
-        className="grid gap-4 rounded-md border border-border bg-white p-4"
+        className="grid gap-4 rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm"
         onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
       >
         {settings.error ? <FormError error={settings.error} /> : null}
@@ -132,9 +132,9 @@ export function SiteSettingsPage() {
           <TextField form={form} name="tagline" textarea />
           <TextField form={form} name="logo_url" />
           <TextField form={form} name="favicon_url" />
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className="grid gap-1 text-sm font-medium text-foreground">
             {settingLabels.site_status}
-            <select className="h-11 rounded-md border border-border px-3" {...form.register("site_status")}>
+            <select className="h-11 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary" {...form.register("site_status")}>
               <option value="active">active</option>
               <option value="inactive">inactive</option>
               <option value="maintenance">maintenance</option>
@@ -168,10 +168,10 @@ function TextField({
   type?: "number" | "text";
 }) {
   const error = form.formState.errors[name]?.message;
-  const inputClass = "rounded-md border border-border px-3 text-slate-900 outline-none focus:border-primary";
+  const inputClass = "rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary placeholder:text-muted-foreground";
 
   return (
-    <label className="grid gap-1 text-sm font-medium text-slate-700">
+    <label className="grid gap-1 text-sm font-medium text-foreground">
       {settingLabels[name]}
       {textarea ? (
         <textarea className={`${inputClass} min-h-24 py-2`} {...form.register(name)} />
@@ -182,14 +182,14 @@ function TextField({
           {...form.register(name, type === "number" ? { valueAsNumber: true } : undefined)}
         />
       )}
-      {error ? <span className="text-xs text-red-700">{String(error)}</span> : null}
+      {error ? <span className="text-xs text-red-600 dark:text-red-400">{String(error)}</span> : null}
     </label>
   );
 }
 
 function ToggleField({ form, name }: { form: ReturnType<typeof useForm<SettingsForm>>; name: keyof SettingsForm }) {
   return (
-    <label className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 text-sm font-medium text-slate-700">
+    <label className="flex min-h-11 items-center gap-3 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground">
       <input type="checkbox" className="h-4 w-4" {...form.register(name)} />
       {settingLabels[name]}
     </label>

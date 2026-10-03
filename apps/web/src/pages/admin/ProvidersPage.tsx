@@ -111,10 +111,10 @@ export function ProvidersPage() {
       />
       <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
         <form
-          className="grid gap-3 rounded-md border border-border bg-white p-4"
+          className="grid gap-3 rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm"
           onSubmit={form.handleSubmit((values) => saveProvider.mutate(values))}
         >
-          <h2 className="text-lg font-semibold text-slate-950">
+          <h2 className="text-lg font-semibold text-foreground">
             {editingProvider ? `Edit ${editingProvider.slug}` : "Create provider"}
           </h2>
           <SecretFieldNotice />
@@ -125,13 +125,13 @@ export function ProvidersPage() {
           <TextInput form={form} name="base_url" label="Base URL" />
           <div>
             <TextInput form={form} name="api_key" label="API Key" type="password" />
-            <p className="mt-1 text-[11px] text-slate-500">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               Opsional. Kosongkan jika provider menggunakan Public API (keyless/open). Isi jika menggunakan Private API.
             </p>
           </div>
           <TextInput form={form} name="priority" label="Priority" type="number" />
           <TextInput form={form} name="daily_limit" label="Daily Limit" type="number" />
-          <label className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 text-sm font-medium text-slate-700">
+          <label className="flex min-h-11 items-center gap-3 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground">
             <input type="checkbox" className="h-4 w-4" {...form.register("is_active")} />
             Active
           </label>
@@ -172,20 +172,20 @@ export function ProvidersPage() {
                 {providerRows.map((provider) => (
                   <tr key={provider.id}>
                     <DataTableCell>
-                      <div className="font-semibold text-slate-950">{provider.name}</div>
-                      <div className="text-xs text-slate-500">{provider.slug}</div>
+                      <div className="font-semibold text-foreground">{provider.name}</div>
+                      <div className="text-xs text-muted-foreground">{provider.slug}</div>
                     </DataTableCell>
                     <DataTableCell>{provider.platform_slug}</DataTableCell>
                     <DataTableCell>
                       {provider.has_api_key ? (
                         <div className="flex flex-col">
-                          <span className="font-semibold text-purple-700">Configured</span>
-                          <span className="text-[10px] text-slate-500">Private API</span>
+                          <span className="font-semibold text-purple-600 dark:text-purple-400">Configured</span>
+                          <span className="text-[10px] text-muted-foreground">Private API</span>
                         </div>
                       ) : (
                         <div className="flex flex-col">
-                          <span className="font-medium text-slate-500">Empty</span>
-                          <span className="text-[10px] text-emerald-600">Public API</span>
+                          <span className="font-medium text-muted-foreground">Empty</span>
+                          <span className="text-[10px] text-emerald-600 dark:text-emerald-400">Public API</span>
                         </div>
                       )}
                     </DataTableCell>
@@ -244,14 +244,14 @@ function TextInput({
   const error = form.formState.errors[name]?.message;
 
   return (
-    <label className="grid gap-1 text-sm font-medium text-slate-700">
+    <label className="grid gap-1 text-sm font-medium text-foreground">
       {label}
       <input
         type={type}
-        className="h-11 rounded-md border border-border px-3 text-slate-900 outline-none focus:border-primary"
+        className="h-11 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary"
         {...form.register(name, type === "number" ? { valueAsNumber: true } : undefined)}
       />
-      {error ? <span className="text-xs text-red-700">{String(error)}</span> : null}
+      {error ? <span className="text-xs text-red-600 dark:text-red-400">{String(error)}</span> : null}
     </label>
   );
 }

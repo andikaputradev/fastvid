@@ -67,9 +67,9 @@ export function DashboardOverviewPage() {
           />
         </div>
       )}
-      <div className="mt-5 rounded-md border border-border bg-white p-4">
-        <h2 className="text-sm font-semibold text-slate-950">Maintenance</h2>
-        <div className="mt-2 text-sm text-slate-600">
+      <div className="mt-5 rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm">
+        <h2 className="text-sm font-semibold text-foreground">Maintenance</h2>
+        <div className="mt-2 text-sm text-muted-foreground">
           {status.data?.maintenanceMode ? status.data.maintenanceMessage ?? "Maintenance mode is active." : "Inactive"}
         </div>
       </div>
@@ -87,12 +87,12 @@ function OverviewCard({
   value: ReactNode;
 }) {
   return (
-    <div className="rounded-md border border-border bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm">
       <div className="flex items-center justify-between gap-3 text-primary">
         {icon}
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</span>
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
       </div>
-      <div className="mt-4 text-2xl font-bold text-slate-950">{value}</div>
+      <div className="mt-4 text-2xl font-bold text-foreground">{value}</div>
     </div>
   );
 }

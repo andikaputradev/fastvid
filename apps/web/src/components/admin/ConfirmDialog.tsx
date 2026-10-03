@@ -13,7 +13,7 @@ export function ConfirmButton({ disabled = false, label, message, onConfirm }: C
     <Button
       type="button"
       variant="secondary"
-      className="h-9 px-3 text-red-700 hover:bg-red-50"
+      className="h-9 px-3 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40"
       disabled={disabled}
       title={label}
       onClick={() => {

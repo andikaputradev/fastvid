@@ -162,15 +162,15 @@ export function AdsPage() {
       />
       <div className="grid gap-5 xl:grid-cols-[440px_1fr]">
         <form
-          className="grid gap-4 rounded-xl border border-border bg-white p-5 shadow-sm"
+          className="grid gap-4 rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm"
           onSubmit={form.handleSubmit((values) => updateAd.mutate(values))}
         >
           <div className="flex items-center justify-between border-b border-border/60 pb-3">
-            <h2 className="text-base font-semibold text-slate-950">
+            <h2 className="text-base font-semibold text-foreground">
               {editingSlot ? `Edit Slot: ${editingSlot.slot_key}` : "Pilih slot iklan di tabel"}
             </h2>
             {editingSlot ? (
-              <span className="rounded bg-brand-50 px-2 py-0.5 text-xs font-semibold text-brand-700 uppercase">
+              <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary uppercase">
                 {editingSlot.slot_key}
               </span>
             ) : null}
@@ -178,15 +178,15 @@ export function AdsPage() {
 
           {updateAd.error ? <FormError error={updateAd.error} /> : null}
 
-          <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-border bg-slate-50 p-1">
+          <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-border bg-muted p-1">
             <button
               type="button"
               onClick={() => form.setValue("ad_type", "code")}
               className={cn(
                 "flex items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold transition",
                 adType === "code"
-                  ? "bg-white text-slate-900 shadow-sm"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <Code2 className="h-3.5 w-3.5" aria-hidden="true" />
@@ -198,8 +198,8 @@ export function AdsPage() {
               className={cn(
                 "flex items-center justify-center gap-1.5 rounded-md py-2 text-xs font-semibold transition",
                 adType === "custom"
-                  ? "bg-white text-brand-700 shadow-sm font-bold"
-                  : "text-slate-600 hover:text-slate-900"
+                  ? "bg-card text-primary shadow-sm font-bold"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
               <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
@@ -207,55 +207,55 @@ export function AdsPage() {
             </button>
           </div>
 
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className="grid gap-1 text-sm font-medium text-foreground">
             Nama Provider / Sponsor
             <input
-              className="h-10 rounded-md border border-border px-3 text-sm text-slate-900 outline-none focus:border-primary"
+              className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
               placeholder={adType === "custom" ? "Contoh: Sponsor Toko Saya" : "Contoh: Google AdSense"}
               {...form.register("provider_name")}
             />
           </label>
 
           {adType === "custom" ? (
-            <div className="space-y-3 rounded-lg border border-brand-100 bg-brand-50/30 p-3">
-              <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <div className="space-y-3 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <label className="grid gap-1 text-sm font-medium text-foreground">
                 URL Gambar Banner
                 <input
                   type="url"
-                  className="h-10 rounded-md border border-border px-3 text-sm text-slate-900 outline-none focus:border-primary"
+                  className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
                   placeholder="https://domain.com/banner-promo.png"
                   {...form.register("image_url")}
                 />
                 {form.formState.errors.image_url ? (
-                  <span className="text-xs text-red-600">{form.formState.errors.image_url.message}</span>
+                  <span className="text-xs text-red-600 dark:text-red-400">{form.formState.errors.image_url.message}</span>
                 ) : null}
               </label>
 
-              <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <label className="grid gap-1 text-sm font-medium text-foreground">
                 URL Tujuan (Target Link)
                 <input
                   type="url"
-                  className="h-10 rounded-md border border-border px-3 text-sm text-slate-900 outline-none focus:border-primary"
+                  className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
                   placeholder="https://toko.com/produk-diskon"
                   {...form.register("target_url")}
                 />
                 {form.formState.errors.target_url ? (
-                  <span className="text-xs text-red-600">{form.formState.errors.target_url.message}</span>
+                  <span className="text-xs text-red-600 dark:text-red-400">{form.formState.errors.target_url.message}</span>
                 ) : null}
               </label>
 
-              <label className="grid gap-1 text-sm font-medium text-slate-700">
+              <label className="grid gap-1 text-sm font-medium text-foreground">
                 Alt Text / Deskripsi Banner
                 <input
-                  className="h-10 rounded-md border border-border px-3 text-sm text-slate-900 outline-none focus:border-primary"
+                  className="h-10 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
                   placeholder="Promo Diskon 50% Hosting Murah"
                   {...form.register("alt_text")}
                 />
               </label>
 
               {previewImageUrl && previewImageUrl.startsWith("http") ? (
-                <div className="mt-2 rounded-md border border-border bg-white p-2">
-                  <p className="mb-1 text-[11px] font-medium text-slate-500">Preview Gambar:</p>
+                <div className="mt-2 rounded-md border border-border bg-card p-2">
+                  <p className="mb-1 text-[11px] font-medium text-muted-foreground">Preview Gambar:</p>
                   <img
                     src={previewImageUrl}
                     alt="Preview banner"
@@ -268,17 +268,17 @@ export function AdsPage() {
               ) : null}
             </div>
           ) : (
-            <label className="grid gap-1 text-sm font-medium text-slate-700">
+            <label className="grid gap-1 text-sm font-medium text-foreground">
               Kode Iklan (Script / HTML)
               <textarea
-                className="min-h-40 rounded-md border border-border px-3 py-2 font-mono text-xs text-slate-900 outline-none focus:border-primary"
+                className="min-h-40 rounded-md border border-border bg-card px-3 py-2 font-mono text-xs text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
                 placeholder="<ins class='adsbygoogle' ...></ins>"
                 {...form.register("ad_code")}
               />
             </label>
           )}
 
-          <label className="flex min-h-10 items-center gap-3 rounded-md border border-border px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 cursor-pointer">
+          <label className="flex min-h-10 items-center gap-3 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground hover:bg-muted/50 cursor-pointer">
             <input type="checkbox" className="h-4 w-4 rounded text-brand-600" {...form.register("is_active")} />
             <span>Aktifkan Slot Iklan Ini</span>
           </label>
@@ -310,13 +310,15 @@ export function AdsPage() {
                   return (
                     <tr key={ad.id}>
                       <DataTableCell>
-                        <span className="font-semibold text-slate-900">{ad.slot_key}</span>
+                        <span className="font-semibold text-foreground">{ad.slot_key}</span>
                       </DataTableCell>
                       <DataTableCell>
                         <span
                           className={cn(
                             "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium",
-                            isCustom ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"
+                            isCustom
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
+                              : "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300"
                           )}
                         >
                           {isCustom ? "Iklan Mandiri" : "Script / Ads"}
@@ -328,12 +330,12 @@ export function AdsPage() {
                       </DataTableCell>
                       <DataTableCell>
                         {isCustom && ad.custom_ad ? (
-                          <div className="max-w-xs text-xs text-slate-600">
-                            <p className="truncate font-medium text-slate-800">{ad.custom_ad.altText || "Custom Banner"}</p>
-                            <p className="truncate text-slate-400">{ad.custom_ad.targetUrl}</p>
+                          <div className="max-w-xs text-xs text-muted-foreground">
+                            <p className="truncate font-medium text-foreground">{ad.custom_ad.altText || "Custom Banner"}</p>
+                            <p className="truncate text-muted-foreground">{ad.custom_ad.targetUrl}</p>
                           </div>
                         ) : (
-                          <pre className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs text-slate-500">
+                          <pre className="max-w-xs overflow-hidden text-ellipsis whitespace-nowrap font-mono text-xs text-muted-foreground">
                             {ad.ad_code ?? ""}
                           </pre>
                         )}

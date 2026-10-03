@@ -144,8 +144,8 @@ export function SecurityPage() {
       <AdminNoIndex title="Security" />
       <AdminPageHeader title="Security" description="Manage blocklists and rate-limit rule values." />
       <div className="grid gap-5 xl:grid-cols-2">
-        <section className="rounded-md border border-border bg-white p-4">
-          <h2 className="text-lg font-semibold text-slate-950">Blocked Domains</h2>
+        <section className="rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">Blocked Domains</h2>
           <form
             className="mt-3 grid gap-3"
             onSubmit={domainForm.handleSubmit((values) => createDomain.mutate(values))}
@@ -153,13 +153,13 @@ export function SecurityPage() {
             {createDomain.error ? <FormError error={createDomain.error} /> : null}
             <input
               placeholder="example.com"
-              className="h-11 rounded-md border border-border px-3 text-sm outline-none focus:border-primary"
+              className="h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
               {...domainForm.register("domain")}
             />
             <FieldError message={domainForm.formState.errors.domain?.message} />
             <input
               placeholder="Reason"
-              className="h-11 rounded-md border border-border px-3 text-sm outline-none focus:border-primary"
+              className="h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
               {...domainForm.register("reason")}
             />
             <FieldError message={domainForm.formState.errors.reason?.message} />
@@ -200,8 +200,8 @@ export function SecurityPage() {
             )}
           </div>
         </section>
-        <section className="rounded-md border border-border bg-white p-4">
-          <h2 className="text-lg font-semibold text-slate-950">Blocked URL Patterns</h2>
+        <section className="rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">Blocked URL Patterns</h2>
           <form
             className="mt-3 grid gap-3"
             onSubmit={patternForm.handleSubmit((values) => createPattern.mutate(values))}
@@ -209,22 +209,22 @@ export function SecurityPage() {
             {createPattern.error ? <FormError error={createPattern.error} /> : null}
             <input
               placeholder="Pattern"
-              className="h-11 rounded-md border border-border px-3 text-sm outline-none focus:border-primary"
+              className="h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
               {...patternForm.register("pattern")}
             />
             <FieldError message={patternForm.formState.errors.pattern?.message} />
-            <select className="h-11 rounded-md border border-border px-3 text-sm" {...patternForm.register("pattern_type")}>
+            <select className="h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary" {...patternForm.register("pattern_type")}>
               <option value="regex">regex</option>
               <option value="glob">glob</option>
               <option value="exact">exact</option>
             </select>
             <input
               placeholder="Reason"
-              className="h-11 rounded-md border border-border px-3 text-sm outline-none focus:border-primary"
+              className="h-11 rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
               {...patternForm.register("reason")}
             />
             <FieldError message={patternForm.formState.errors.reason?.message} />
-            <label className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 text-sm font-medium text-slate-700">
+            <label className="flex min-h-11 items-center gap-3 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground">
               <input type="checkbox" className="h-4 w-4" {...patternForm.register("is_active")} />
               Active
             </label>
@@ -261,8 +261,8 @@ export function SecurityPage() {
           </div>
         </section>
       </div>
-      <section className="mt-5 rounded-md border border-border bg-white p-4">
-        <h2 className="text-lg font-semibold text-slate-950">Rate-Limit Rules</h2>
+      <section className="mt-5 rounded-md border border-border bg-card p-4 text-card-foreground shadow-sm">
+        <h2 className="text-lg font-semibold text-foreground">Rate-Limit Rules</h2>
         {rateRules.error ? <FormError error={rateRules.error} /> : null}
         <div className="mt-4 grid gap-3">
           {rateRuleRows.length > 0 ? rateRuleRows.map((rule) => <RateRuleForm key={rule.id} rule={rule} />) : <EmptyState label="No rate-limit rules." />}
@@ -273,7 +273,7 @@ export function SecurityPage() {
 }
 
 function FieldError({ message }: { message: string | undefined }) {
-  return message ? <span className="text-xs text-red-700">{message}</span> : null;
+  return message ? <span className="text-xs text-red-600 dark:text-red-400">{message}</span> : null;
 }
 
 function PatternRow({
@@ -327,40 +327,40 @@ function RateRuleForm({ rule }: { rule: RateLimitRule }) {
 
   return (
     <form
-      className="grid gap-3 rounded-md border border-border p-3 md:grid-cols-[1.2fr_1fr_1fr_1fr_auto] md:items-end"
+      className="grid gap-3 rounded-md border border-border bg-card p-3 text-card-foreground md:grid-cols-[1.2fr_1fr_1fr_1fr_auto] md:items-end"
       onSubmit={form.handleSubmit((values) => mutation.mutate(values))}
     >
       {mutation.error ? <div className="md:col-span-5"><FormError error={mutation.error} /></div> : null}
       <div>
-        <div className="text-sm font-semibold text-slate-950">{rule.rule_name}</div>
-        <select className="mt-1 h-10 w-full rounded-md border border-border px-3 text-sm" {...form.register("scope")}>
+        <div className="text-sm font-semibold text-foreground">{rule.rule_name}</div>
+        <select className="mt-1 h-10 w-full rounded-md border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-primary" {...form.register("scope")}>
           <option value="global">global</option>
           <option value="per_ip">per_ip</option>
           <option value="per_platform">per_platform</option>
         </select>
       </div>
-      <label className="grid gap-1 text-sm font-medium text-slate-700">
+      <label className="grid gap-1 text-sm font-medium text-foreground">
         Platform
-        <input className="h-10 rounded-md border border-border px-3" {...form.register("platform_slug")} />
+        <input className="h-10 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary" {...form.register("platform_slug")} />
       </label>
-      <label className="grid gap-1 text-sm font-medium text-slate-700">
+      <label className="grid gap-1 text-sm font-medium text-foreground">
         Max Requests
         <input
           type="number"
-          className="h-10 rounded-md border border-border px-3"
+          className="h-10 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary"
           {...form.register("max_requests", { valueAsNumber: true })}
         />
       </label>
-      <label className="grid gap-1 text-sm font-medium text-slate-700">
+      <label className="grid gap-1 text-sm font-medium text-foreground">
         Window Seconds
         <input
           type="number"
-          className="h-10 rounded-md border border-border px-3"
+          className="h-10 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary"
           {...form.register("window_seconds", { valueAsNumber: true })}
         />
       </label>
       <div className="flex items-center gap-2">
-        <label className="flex h-10 items-center gap-2 text-sm text-slate-700">
+        <label className="flex h-10 items-center gap-2 text-sm text-foreground">
           <input type="checkbox" className="h-4 w-4" {...form.register("is_active")} />
           Active
         </label>

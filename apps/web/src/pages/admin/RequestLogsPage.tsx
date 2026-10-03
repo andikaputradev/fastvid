@@ -97,7 +97,7 @@ function PaginationControls({
 }) {
   return (
     <div className="mt-4 flex items-center justify-between gap-3">
-      <span className="text-sm text-slate-600">Offset {offset}</span>
+      <span className="text-sm text-muted-foreground">Offset {offset}</span>
       <div className="flex gap-2">
         <Button type="button" variant="secondary" disabled={offset === 0} onClick={onPrevious}>
           Previous

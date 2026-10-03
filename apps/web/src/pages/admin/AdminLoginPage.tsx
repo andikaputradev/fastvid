@@ -47,12 +47,12 @@ export function AdminLoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
+    <main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
       <AdminNoIndex title="Login" />
-      <section className="w-full max-w-md rounded-md border border-border bg-white p-6 shadow-sm">
+      <section className="w-full max-w-md rounded-md border border-border bg-card p-6 text-card-foreground shadow-sm">
         <div className="mb-5 flex items-center gap-2">
           <Lock className="h-5 w-5 text-primary" aria-hidden="true" />
-          <h1 className="text-xl font-bold text-slate-950">Admin Login</h1>
+          <h1 className="text-xl font-bold text-foreground">Admin Login</h1>
         </div>
         <form
           className="grid gap-4"
@@ -61,28 +61,28 @@ export function AdminLoginPage() {
           })}
         >
           {login.error ? <FormError error={login.error} /> : null}
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className="grid gap-1 text-sm font-medium text-foreground">
             Email
             <input
               type="email"
               autoComplete="username"
-              className="h-11 rounded-md border border-border px-3 text-slate-900 outline-none focus:border-primary"
+              className="h-11 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
               {...form.register("email")}
             />
             {form.formState.errors.email ? (
-              <span className="text-xs text-red-700">{form.formState.errors.email.message}</span>
+              <span className="text-xs text-red-600 dark:text-red-400">{form.formState.errors.email.message}</span>
             ) : null}
           </label>
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className="grid gap-1 text-sm font-medium text-foreground">
             Password
             <input
               type="password"
               autoComplete="current-password"
-              className="h-11 rounded-md border border-border px-3 text-slate-900 outline-none focus:border-primary"
+              className="h-11 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary placeholder:text-muted-foreground"
               {...form.register("password")}
             />
             {form.formState.errors.password ? (
-              <span className="text-xs text-red-700">{form.formState.errors.password.message}</span>
+              <span className="text-xs text-red-600 dark:text-red-400">{form.formState.errors.password.message}</span>
             ) : null}
           </label>
           <Button type="submit" disabled={login.isPending}>

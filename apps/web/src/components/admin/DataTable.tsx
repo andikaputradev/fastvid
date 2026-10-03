@@ -6,18 +6,18 @@ interface DataTableProps {
 
 export function DataTable({ children }: DataTableProps) {
   return (
-    <div className="overflow-x-auto rounded-md border border-border bg-white">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
       <table className="min-w-full divide-y divide-border text-left text-sm">{children}</table>
     </div>
   );
 }
 
 export function DataTableHead({ children }: PropsWithChildren) {
-  return <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">{children}</thead>;
+  return <thead className="bg-muted/60 text-xs font-semibold uppercase tracking-wider text-muted-foreground">{children}</thead>;
 }
 
 export function DataTableBody({ children }: PropsWithChildren) {
-  return <tbody className="divide-y divide-border text-slate-700">{children}</tbody>;
+  return <tbody className="divide-y divide-border text-foreground">{children}</tbody>;
 }
 
 export function DataTableCell({ children }: PropsWithChildren) {

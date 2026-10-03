@@ -81,7 +81,7 @@ export function AuditLogsPage() {
                 <DataTableCell>{log.action}</DataTableCell>
                 <DataTableCell>
                   <div>{log.resource_type}</div>
-                  <div className="text-xs text-slate-500">{log.resource_id ?? ""}</div>
+                  <div className="text-xs text-muted-foreground">{log.resource_id ?? ""}</div>
                 </DataTableCell>
                 <DataTableCell>{log.admin_email_hash}</DataTableCell>
                 <DataTableCell>{log.ip_hash}</DataTableCell>
@@ -104,7 +104,7 @@ export function AuditLogsPage() {
         <EmptyState label="No audit logs found." />
       )}
       <div className="mt-4 flex items-center justify-between gap-3">
-        <span className="text-sm text-slate-600">Offset {offset}</span>
+        <span className="text-sm text-muted-foreground">Offset {offset}</span>
         <div className="flex gap-2">
           <Button type="button" variant="secondary" disabled={offset === 0} onClick={() => setOffset((value) => Math.max(0, value - pageSize))}>
             Previous

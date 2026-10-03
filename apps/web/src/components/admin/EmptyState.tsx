@@ -4,7 +4,7 @@ interface EmptyStateProps {
 
 export function EmptyState({ label }: EmptyStateProps) {
   return (
-    <div className="rounded-md border border-dashed border-border bg-white p-6 text-center text-sm text-slate-600">
+    <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
       {label}
     </div>
   );

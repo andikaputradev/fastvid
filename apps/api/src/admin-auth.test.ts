@@ -462,3 +462,37 @@ test("admin auth responses never expose password, session secret, or stack trace
     await app.close();
   }
 });
+
+test("GET /api/v1/admin/auth/csrf rejects missing session", async () => {
+  const { repositories } = createMockRepositories();
+  const app = await buildTestApp(repositories);
+
+  try {
+    const response = await inject(app, "GET", "/api/v1/admin/auth/csrf");
+    assert.equal(response.statusCode, 401);
+  } finally {
+    await app.close();
+  }
+});
+
+test("GET /api/v1/admin/auth/csrf issues and sets CSRF token cookie and response data for authenticated session", async () => {
+  const { repositories } = createMockRepositories();
+  const app = await buildTestApp(repositories);
+
+  try {
+    const { cookie } = await login(app);
+    const response = await inject(app, "GET", "/api/v1/admin/auth/csrf", { cookie });
+
+    assert.equal(response.statusCode, 200);
+    const body = JSON.parse(response.body) as ApiSuccessResponse<{ csrfToken: string }>;
+    assert.equal(body.success, true);
+    assert.ok(typeof body.data?.csrfToken === "string" && body.data.csrfToken.length > 0);
+
+    const cookies = setCookieHeaders(response);
+    const csrfCookie = cookieValue(cookies, ADMIN_CSRF_COOKIE_NAME);
+    assert.ok(csrfCookie.length > 0);
+  } finally {
+    await app.close();
+  }
+});
+

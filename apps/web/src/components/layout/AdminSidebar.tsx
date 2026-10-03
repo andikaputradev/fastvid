@@ -8,7 +8,8 @@ import {
   Plug,
   Settings,
   Shield,
-  SlidersHorizontal
+  SlidersHorizontal,
+  X
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 import { cn } from "../../lib/utils";
@@ -25,26 +26,52 @@ const navItems = [
   { href: "/admin/system-status", icon: Gauge, label: "System Status" }
 ];
 
-export function AdminSidebar() {
+export interface AdminSidebarProps {
+  onNavigate?: () => void;
+  onClose?: () => void;
+  isMobile?: boolean;
+}
+
+export function AdminSidebar({ onNavigate, onClose, isMobile }: AdminSidebarProps = {}) {
   return (
-    <aside className="border-r border-border bg-white">
-      <div className="border-b border-border px-4 py-4">
-        <div className="text-lg font-bold text-slate-950">VidSaveID</div>
-        <div className="mt-1 flex items-center gap-1 text-xs font-medium text-slate-500">
-          <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
-          Admin Console
+    <aside
+      className={cn(
+        "flex h-full flex-col border-r border-border bg-card text-card-foreground",
+        isMobile ? "w-72" : "w-full"
+      )}
+    >
+      <div className="flex items-center justify-between border-b border-border px-5 py-4">
+        <div>
+          <div className="text-lg font-bold tracking-tight text-foreground">FastVid</div>
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            <BarChart3 className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            Admin Console
+          </div>
         </div>
+        {isMobile && onClose ? (
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Close menu"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        ) : null}
       </div>
-      <nav className="grid gap-1 px-2 py-3 text-sm">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 text-sm font-medium">
         {navItems.map((item) => (
           <NavLink
             key={item.href}
             to={item.href}
             end={item.href === "/admin"}
+            onClick={onNavigate}
             className={({ isActive }) =>
               cn(
-                "flex min-h-10 items-center gap-3 rounded-md px-3 font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-950",
-                isActive && "bg-teal-50 text-primary"
+                "flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                isActive
+                  ? "bg-primary/10 font-semibold text-primary"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               )
             }
           >

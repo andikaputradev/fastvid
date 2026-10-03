@@ -127,10 +127,10 @@ export function PlatformsPage() {
       <AdminPageHeader title="Platforms" description="Control platform allowlists, status, and public availability." />
       <div className="grid gap-5 xl:grid-cols-[420px_1fr]">
         <form
-          className="grid gap-3 rounded-md border border-border bg-white p-4"
+          className="grid gap-4 rounded-xl border border-border bg-card p-5 text-card-foreground shadow-sm"
           onSubmit={form.handleSubmit((values) => savePlatform.mutate(values))}
         >
-          <h2 className="text-lg font-semibold text-slate-950">
+          <h2 className="text-lg font-semibold text-foreground">
             {editingPlatform ? `Edit ${editingPlatform.slug}` : "Create platform"}
           </h2>
           {savePlatform.error ? <FormError error={savePlatform.error} /> : null}
@@ -142,19 +142,22 @@ export function PlatformsPage() {
           <TextInput form={form} name="icon_url" label="Icon URL" />
           <TextareaInput form={form} name="description" label="Description" />
           <TextInput form={form} name="max_requests_per_minute" label="Max Requests Per Minute" type="number" />
-          <label className="grid gap-1 text-sm font-medium text-slate-700">
+          <label className="grid gap-1.5 text-sm font-medium text-foreground">
             Status
-            <select className="h-11 rounded-md border border-border px-3" {...form.register("status")}>
-              <option value="inactive">inactive</option>
-              <option value="active">active</option>
-              <option value="maintenance">maintenance</option>
+            <select
+              className="h-11 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary"
+              {...form.register("status")}
+            >
+              <option value="inactive" className="bg-card text-foreground">inactive</option>
+              <option value="active" className="bg-card text-foreground">active</option>
+              <option value="maintenance" className="bg-card text-foreground">maintenance</option>
             </select>
           </label>
-          <label className="flex min-h-11 items-center gap-3 rounded-md border border-border px-3 text-sm font-medium text-slate-700">
-            <input type="checkbox" className="h-4 w-4" {...form.register("is_active")} />
+          <label className="flex min-h-11 items-center gap-3 rounded-md border border-border bg-card px-3 text-sm font-medium text-foreground">
+            <input type="checkbox" className="h-4 w-4 accent-primary" {...form.register("is_active")} />
             Active
           </label>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 pt-2">
             <Button type="submit" disabled={savePlatform.isPending}>
               {editingPlatform ? <Save className="h-4 w-4" aria-hidden="true" /> : <Plus className="h-4 w-4" aria-hidden="true" />}
               {editingPlatform ? "Save platform" : "Create platform"}
@@ -190,8 +193,8 @@ export function PlatformsPage() {
                 {platformRows.map((platform) => (
                   <tr key={platform.id}>
                     <DataTableCell>
-                      <div className="font-semibold text-slate-950">{platform.name}</div>
-                      <div className="text-xs text-slate-500">{platform.slug}</div>
+                      <div className="font-semibold text-foreground">{platform.name}</div>
+                      <div className="text-xs text-muted-foreground">{platform.slug}</div>
                     </DataTableCell>
                     <DataTableCell>{platform.base_domains.length > 0 ? platform.base_domains.join(", ") : "None"}</DataTableCell>
                     <DataTableCell>
@@ -247,14 +250,14 @@ function TextInput({
   const error = form.formState.errors[name]?.message;
 
   return (
-    <label className="grid gap-1 text-sm font-medium text-slate-700">
+    <label className="grid gap-1.5 text-sm font-medium text-foreground">
       {label}
       <input
         type={type}
-        className="h-11 rounded-md border border-border px-3 text-slate-900 outline-none focus:border-primary"
+        className="h-11 rounded-md border border-border bg-card px-3 text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
         {...form.register(name, type === "number" ? { valueAsNumber: true } : undefined)}
       />
-      {error ? <span className="text-xs text-red-700">{String(error)}</span> : null}
+      {error ? <span className="text-xs text-red-600 dark:text-red-400">{String(error)}</span> : null}
     </label>
   );
 }
@@ -271,13 +274,13 @@ function TextareaInput({
   const error = form.formState.errors[name]?.message;
 
   return (
-    <label className="grid gap-1 text-sm font-medium text-slate-700">
+    <label className="grid gap-1.5 text-sm font-medium text-foreground">
       {label}
       <textarea
-        className="min-h-20 rounded-md border border-border px-3 py-2 text-slate-900 outline-none focus:border-primary"
+        className="min-h-20 rounded-md border border-border bg-card px-3 py-2 text-foreground placeholder:text-muted-foreground outline-none focus:border-primary"
         {...form.register(name)}
       />
-      {error ? <span className="text-xs text-red-700">{String(error)}</span> : null}
+      {error ? <span className="text-xs text-red-600 dark:text-red-400">{String(error)}</span> : null}
     </label>
   );
 }

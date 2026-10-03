@@ -15,10 +15,6 @@ export class AdminApiError extends Error {
   }
 }
 
-interface ApiSuccess<TData> {
-  success: true;
-  data: TData;
-}
 
 interface ApiFailure {
   success: false;
@@ -29,7 +25,6 @@ interface ApiFailure {
   requestId?: string;
 }
 
-type ApiEnvelope<TData> = ApiFailure | ApiSuccess<TData>;
 
 export interface AdminIdentity {
   id: string;
@@ -579,6 +574,30 @@ export async function adminRequest<TData>(
   const csrf = init.csrf ?? true;
   const { csrf: _csrf, ...requestInit } = init;
 
+  if (csrf && mutationMethods.has(method.toUpperCase())) {
+    const existingToken = readAdminCsrfToken();
+    if (!existingToken) {
+      try {
+        const csrfRes = await fetch(`${getApiBaseUrl()}/api/v1/admin/auth/csrf`, {
+          credentials: "include"
+        });
+        if (csrfRes.ok) {
+          const headerToken = csrfRes.headers?.get?.("x-csrf-token");
+          if (headerToken) {
+            setAdminCsrfToken(headerToken);
+          } else {
+            const body: unknown = await csrfRes.json();
+            if (isRecord(body) && isRecord(body.data) && typeof body.data.csrfToken === "string") {
+              setAdminCsrfToken(body.data.csrfToken);
+            }
+          }
+        }
+      } catch {
+        // Fall through to headersFor
+      }
+    }
+  }
+
   let headers: HeadersInit;
   try {
     headers = headersFor(method, init.headers, csrf);
@@ -624,7 +643,11 @@ export async function adminRequest<TData>(
     );
   }
 
-  return (payload as ApiEnvelope<TData> & { success: true }).data;
+  if (isRecord(payload) && "data" in payload && payload.data !== undefined) {
+    return payload.data as TData;
+  }
+
+  return payload as TData;
 }
 
 function jsonBody(body: unknown): RequestInit {
@@ -665,6 +688,18 @@ export const adminApi = {
 
     return { admin: data.admin };
   },
+  refreshCsrfToken: async (): Promise<string | null> => {
+    try {
+      const data = await adminRequest<{ csrfToken?: string }>("/api/v1/admin/auth/csrf");
+      if (data && typeof data === "object" && "csrfToken" in data && typeof data.csrfToken === "string") {
+        setAdminCsrfToken(data.csrfToken);
+        return data.csrfToken;
+      }
+    } catch {
+      // ignore
+    }
+    return readAdminCsrfToken();
+  },
   status: async () => {
     const data = recordFrom(await adminRequest<unknown>("/api/v1/status"));
     const siteName = nullableString(read(data, "siteName", "site_name"));
@@ -681,7 +716,18 @@ export const adminApi = {
       ...(tagline === null ? {} : { tagline })
     } satisfies StatusResponse;
   },
-  health: () => adminRequest<{ status: string }>("/health"),
+  health: async (): Promise<{ status: string }> => {
+    const data = await adminRequest<{ status?: string } | { data?: { status?: string } }>("/health");
+    if (isRecord(data)) {
+      if ("status" in data && typeof data.status === "string") {
+        return { status: data.status };
+      }
+      if ("data" in data && isRecord(data.data) && typeof data.data.status === "string") {
+        return { status: data.data.status };
+      }
+    }
+    return { status: "ok" };
+  },
   listSettings: async () => {
     const data = recordFrom(await adminRequest<unknown>("/api/v1/admin/settings"));
 

@@ -131,6 +131,22 @@ export async function adminAuthRoute(app: FastifyInstance, options: AdminAuthRou
     }
   });
 
+  app.get("/auth/csrf", {
+    preHandler: requireAdminAuth,
+    handler: async (request, reply) => {
+      const admin = requireAdminContext(request);
+      reply.header("x-csrf-token", admin.csrfToken);
+      reply.header("set-cookie", [csrfCookie(admin.csrfToken)]);
+
+      return reply.send({
+        success: true,
+        data: {
+          csrfToken: admin.csrfToken
+        }
+      });
+    }
+  });
+
   app.post("/auth/logout", {
     preHandler: [requireAdminAuth, requireCsrfToken],
     handler: async (request, reply) => {
