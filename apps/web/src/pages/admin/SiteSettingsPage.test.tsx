@@ -48,7 +48,7 @@ describe("SiteSettingsPage", () => {
 
     renderWithProviders(<SiteSettingsPage />);
 
-    await waitFor(() => expect(screen.getByLabelText("Site Name")).toHaveValue("FastVid"));
+    await waitFor(() => expect(screen.getByLabelText("Meta Description")).toHaveValue("Save public videos."));
     fireEvent.click(screen.getByLabelText("Maintenance Mode"));
     fireEvent.change(screen.getByLabelText("Public Rate Limit Per Minute"), { target: { value: "30" } });
     fireEvent.click(screen.getByRole("button", { name: /save settings/i }));

@@ -9,8 +9,6 @@
       "VITE_SITE_URL": "https://fastvid.my.id"
     }
   },
-  "cleanUrls": true,
-  "trailingSlash": false,
   "headers": [
     {
       "source": "/(.*)",
@@ -47,7 +45,7 @@
       ]
     },
     {
-      "source": "/admin/(.*)",
+      "source": "/admin(.*)",
       "headers": [
         {
           "key": "X-Robots-Tag",

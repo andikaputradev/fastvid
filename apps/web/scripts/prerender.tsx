@@ -125,8 +125,29 @@ function renderSitemap(): string {
   return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
 }
 
+const adminSpaShellRoutes = [
+  "/admin",
+  "/admin/login",
+  "/admin/settings",
+  "/admin/platforms",
+  "/admin/providers",
+  "/admin/ads",
+  "/admin/security",
+  "/admin/request-logs",
+  "/admin/audit-logs",
+  "/admin/system-status"
+];
+
+function renderAdminHead(): string {
+  return [
+    "    <title>Admin - FastVid</title>",
+    '    <meta name="robots" content="noindex,nofollow,noarchive" />',
+    '    <meta name="googlebot" content="noindex,nofollow,noarchive" />'
+  ].join("\n");
+}
+
 function renderRobots(): string {
-  return `User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: ${canonicalUrl("/sitemap.xml")}\n`;
+  return `User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /admin/\n\nSitemap: ${canonicalUrl("/sitemap.xml")}\n`;
 }
 
 for (const route of publicSeoRoutes) {
@@ -139,7 +160,15 @@ for (const route of publicSeoRoutes) {
   writeFileSync(filePath, routeHtml, "utf8");
 }
 
+for (const adminRoute of adminSpaShellRoutes) {
+  const adminHtml = stripManagedHeadTags(template).replace("</head>", `${renderAdminHead()}\n  </head>`);
+  const filePath = path.join(distDir, adminRoute.slice(1), "index.html");
+
+  mkdirSync(path.dirname(filePath), { recursive: true });
+  writeFileSync(filePath, adminHtml, "utf8");
+}
+
 writeFileSync(path.join(distDir, "sitemap.xml"), renderSitemap(), "utf8");
 writeFileSync(path.join(distDir, "robots.txt"), renderRobots(), "utf8");
 
-console.log(`Prerendered ${publicSeoRoutes.length} public routes.`);
+console.log(`Prerendered ${publicSeoRoutes.length} public routes and ${adminSpaShellRoutes.length} admin SPA shells.`);
