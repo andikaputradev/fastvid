@@ -9,11 +9,13 @@ import { statusRoute } from "./public/status.route.js";
 import type { AdminAuthProvider } from "../auth/adminAuthProvider.js";
 import type { DnsAddress } from "@vidsaveid/security";
 import type { ApiRepositories } from "../repositories/index.js";
+import type { ProviderAdapter } from "../providers/providerAdapter.js";
 
 export interface ApiRouteOptions {
   repositories?: ApiRepositories;
   adminAuthProvider?: AdminAuthProvider;
   ssrfResolveHostname?: (hostname: string) => Promise<readonly DnsAddress[]>;
+  providerAdapter?: ProviderAdapter;
 }
 
 export async function registerRoutes(app: FastifyInstance, options: ApiRouteOptions = {}) {
@@ -30,16 +32,12 @@ export async function registerRoutes(app: FastifyInstance, options: ApiRouteOpti
     prefix: "/api/v1",
     ...(options.repositories ? { repositories: options.repositories } : {})
   });
-  const downloadRouteOptions = options.ssrfResolveHostname
-    ? {
-        prefix: "/api/v1",
-        ...(options.repositories ? { repositories: options.repositories } : {}),
-        ssrfResolveHostname: options.ssrfResolveHostname
-      }
-    : {
-        prefix: "/api/v1",
-        ...(options.repositories ? { repositories: options.repositories } : {})
-      };
+  const downloadRouteOptions = {
+    prefix: "/api/v1",
+    ...(options.repositories ? { repositories: options.repositories } : {}),
+    ...(options.ssrfResolveHostname ? { ssrfResolveHostname: options.ssrfResolveHostname } : {}),
+    ...(options.providerAdapter ? { providerAdapter: options.providerAdapter } : {})
+  };
 
   await app.register(downloadRoute, downloadRouteOptions);
   await app.register(adminAuthRoute, {

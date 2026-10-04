@@ -9,6 +9,7 @@ import type { CreateRequestLogInput } from "./repositories/log.repository.js";
 import type { PlatformRecord, PublicPlatform } from "./repositories/platform.repository.js";
 import type { PublicSettings } from "./repositories/settings.repository.js";
 import { createNoopAdminRepository } from "./testHelpers/adminRepository.js";
+import type { ProviderAdapter } from "./providers/providerAdapter.js";
 
 process.env.NODE_ENV = "test";
 process.env.IP_HASH_SECRET = "i".repeat(32);
@@ -469,6 +470,89 @@ test("GET /api/v1/download/stream streams media with upstream headers and attach
     assert.equal(capturedHeaders?.Referer, "https://m.tiktok.com/");
   } finally {
     globalThis.fetch = originalFetch;
+    await app.close();
+  }
+});
+
+test("POST /api/v1/download tunnels external video and audio URLs and hides secrets", async () => {
+  const { repositories } = createMockRepositories();
+  const mockProvider = {
+    id: "provider-1",
+    name: "Kyzzz TikTok",
+    slug: "kyzzz-tiktok",
+    platformSlug: "tiktok",
+    baseUrl: "https://api.kyzzz.xyz/api/download/tiktok",
+    apiKeyEncrypted: null,
+    priority: 1,
+    dailyLimit: 1000,
+    dailyUsed: 0,
+    isActive: true
+  };
+
+  repositories.providers.getActiveProvidersForPlatform = async () => [mockProvider];
+
+  const sensitiveProviderStreamUrl =
+    "https://api.kyzzz.xyz/api/download/tiktok?action=stream&url=https%3A%2F%2Fv16-webapp-prime.tiktok.com%2Fvideo%2Ftos%2F&apikey=kyzz3327503284211";
+
+  const mockAdapter = {
+    async extractMedia() {
+      return {
+        title: "Test Video Clip",
+        platform: "tiktok",
+        thumbnailUrl: "https://cdn.example.test/thumb.jpg",
+        duration: 15,
+        author: "creator",
+        media: [
+          {
+            format: "mp4",
+            hasAudio: true,
+            quality: "HD (No Watermark)",
+            url: sensitiveProviderStreamUrl
+          },
+          {
+            format: "mp3",
+            hasAudio: true,
+            quality: "Audio (MP3)",
+            url: "https://cdn.example.test/music.mp3"
+          }
+        ]
+      };
+    }
+  };
+
+  const { buildApp } = await import("./app.js");
+  const app = await buildApp({
+    logger: false,
+    repositories,
+    ssrfResolveHostname: publicDnsResolver,
+    providerAdapter: mockAdapter as unknown as ProviderAdapter
+  });
+
+  try {
+    const res = await app.inject({
+      method: "POST",
+      url: "/api/v1/download",
+      headers: {
+        "content-type": "application/json",
+        "user-agent": "vidsaveid-test",
+        "x-forwarded-for": "203.0.113.10"
+      },
+      payload: JSON.stringify({ url: "https://www.tiktok.com/@wahyu/video/1" })
+    });
+
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.success, true);
+    assert.equal(body.data.media.length, 2);
+
+    // Both video and audio must be tunneled via /api/v1/download/stream
+    assert.match(body.data.media[0].url, /^\/api\/v1\/download\/stream\?token=/);
+    assert.match(body.data.media[1].url, /^\/api\/v1\/download\/stream\?token=/);
+
+    // Upstream URL and API key must never appear in response body
+    assert.equal(res.body.includes("api.kyzzz.xyz"), false);
+    assert.equal(res.body.includes("kyzz3327503284211"), false);
+  } finally {
     await app.close();
   }
 });

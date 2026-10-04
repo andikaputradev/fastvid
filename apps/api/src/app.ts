@@ -10,12 +10,14 @@ import { registerRoutes } from "./routes/index.js";
 import type { AdminAuthProvider } from "./auth/adminAuthProvider.js";
 import type { DnsAddress } from "@vidsaveid/security";
 import type { ApiRepositories } from "./repositories/index.js";
+import type { ProviderAdapter } from "./providers/providerAdapter.js";
 
 export interface BuildAppOptions {
   logger?: boolean | typeof logger;
   repositories?: ApiRepositories;
   adminAuthProvider?: AdminAuthProvider;
   ssrfResolveHostname?: (hostname: string) => Promise<readonly DnsAddress[]>;
+  providerAdapter?: ProviderAdapter;
 }
 
 export async function buildApp(options: BuildAppOptions = {}) {
@@ -70,7 +72,8 @@ export async function buildApp(options: BuildAppOptions = {}) {
   const routeOptions = {
     ...(options.repositories ? { repositories: options.repositories } : {}),
     ...(options.adminAuthProvider ? { adminAuthProvider: options.adminAuthProvider } : {}),
-    ...(options.ssrfResolveHostname ? { ssrfResolveHostname: options.ssrfResolveHostname } : {})
+    ...(options.ssrfResolveHostname ? { ssrfResolveHostname: options.ssrfResolveHostname } : {}),
+    ...(options.providerAdapter ? { providerAdapter: options.providerAdapter } : {})
   };
 
   await registerRoutes(app, routeOptions);

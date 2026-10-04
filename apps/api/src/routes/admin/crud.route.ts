@@ -74,7 +74,12 @@ const providerInputSchema = z
     slug: z.string().trim().min(1).max(50),
     platform_slug: z.string().trim().min(1).max(50),
     base_url: z.string().trim().url().max(2048),
-    api_key: z.string().min(1).max(5000).nullable().optional(),
+    api_key: z
+      .string()
+      .trim()
+      .transform((val) => (val.length === 0 ? null : val))
+      .nullable()
+      .optional(),
     priority: z.number().int().min(1).max(100).default(1),
     daily_limit: z.number().int().min(1).max(1_000_000).default(1000),
     is_active: z.boolean().default(false)
@@ -729,7 +734,21 @@ export async function adminCrudRoute(app: FastifyInstance, options: AdminCrudRou
   }));
 
   app.post("/platforms", { preHandler: requireCsrfToken }, async (request) => {
-    const platform = await repositories.admin.createPlatform(platformCreateInput(parseBody(platformInputSchema, request.body)));
+    const input = platformCreateInput(parseBody(platformInputSchema, request.body));
+    const platforms = await repositories.admin.listPlatforms();
+    if (platforms.some((p) => p.slug === input.slug)) {
+      throw new AppError("CONFLICT", `Platform dengan slug '${input.slug}' sudah ada.`, 409);
+    }
+
+    let platform;
+    try {
+      platform = await repositories.admin.createPlatform(input);
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "code" in err && (err as { code: string }).code === "23505") {
+        throw new AppError("CONFLICT", `Platform dengan slug '${input.slug}' sudah ada.`, 409);
+      }
+      throw err;
+    }
 
     await auditMutation(repositories, request, {
       action: "CREATE_PLATFORM",
@@ -807,7 +826,49 @@ export async function adminCrudRoute(app: FastifyInstance, options: AdminCrudRou
   }));
 
   app.post("/providers", { preHandler: requireCsrfToken }, async (request) => {
-    const provider = await repositories.admin.createProvider(providerCreateInput(parseBody(providerInputSchema, request.body)));
+    const input = providerCreateInput(parseBody(providerInputSchema, request.body));
+
+    const platforms = await repositories.admin.listPlatforms();
+    const platform = platforms.find((p) => p.slug === input.platformSlug);
+    if (!platform) {
+      throw new AppError(
+        "VALIDATION_FAILED",
+        `Platform '${input.platformSlug}' tidak ditemukan. Pilih platform yang tersedia atau tambahkan platform baru terlebih dahulu.`,
+        400
+      );
+    }
+
+    const existingProviders = await repositories.admin.listProviders();
+    if (existingProviders.some((p) => p.slug === input.slug && p.platformSlug === input.platformSlug)) {
+      throw new AppError(
+        "CONFLICT",
+        `Provider dengan slug '${input.slug}' untuk platform '${input.platformSlug}' sudah ada. Gunakan slug yang berbeda.`,
+        409
+      );
+    }
+
+    let provider;
+    try {
+      provider = await repositories.admin.createProvider(input);
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "code" in err) {
+        if ((err as { code: string }).code === "23505") {
+          throw new AppError(
+            "CONFLICT",
+            `Provider dengan slug '${input.slug}' untuk platform '${input.platformSlug}' sudah ada.`,
+            409
+          );
+        }
+        if ((err as { code: string }).code === "23503") {
+          throw new AppError(
+            "VALIDATION_FAILED",
+            `Platform '${input.platformSlug}' tidak ditemukan.`,
+            400
+          );
+        }
+      }
+      throw err;
+    }
 
     await auditMutation(repositories, request, {
       action: "CREATE_PROVIDER",
@@ -827,7 +888,53 @@ export async function adminCrudRoute(app: FastifyInstance, options: AdminCrudRou
       throw new AppError("NOT_FOUND", "Provider was not found.", 404);
     }
 
-    const provider = await repositories.admin.updateProvider(id, providerUpdateInput(parseBody(providerUpdateSchema, request.body)));
+    const input = providerUpdateInput(parseBody(providerUpdateSchema, request.body));
+
+    if (input.platformSlug !== undefined) {
+      const platforms = await repositories.admin.listPlatforms();
+      const platform = platforms.find((p) => p.slug === input.platformSlug);
+      if (!platform) {
+        throw new AppError(
+          "VALIDATION_FAILED",
+          `Platform '${input.platformSlug}' tidak ditemukan. Pilih platform yang tersedia.`,
+          400
+        );
+      }
+    }
+
+    const targetSlug = input.slug ?? oldProvider.slug;
+    const targetPlatformSlug = input.platformSlug ?? oldProvider.platformSlug;
+    const existing = await repositories.admin.listProviders();
+    if (existing.some((p) => p.id !== id && p.slug === targetSlug && p.platformSlug === targetPlatformSlug)) {
+      throw new AppError(
+        "CONFLICT",
+        `Provider dengan slug '${targetSlug}' untuk platform '${targetPlatformSlug}' sudah ada.`,
+        409
+      );
+    }
+
+    let provider;
+    try {
+      provider = await repositories.admin.updateProvider(id, input);
+    } catch (err: unknown) {
+      if (typeof err === "object" && err !== null && "code" in err) {
+        if ((err as { code: string }).code === "23505") {
+          throw new AppError(
+            "CONFLICT",
+            `Provider dengan slug '${targetSlug}' untuk platform '${targetPlatformSlug}' sudah ada.`,
+            409
+          );
+        }
+        if ((err as { code: string }).code === "23503") {
+          throw new AppError(
+            "VALIDATION_FAILED",
+            `Platform '${targetPlatformSlug}' tidak ditemukan.`,
+            400
+          );
+        }
+      }
+      throw err;
+    }
 
     if (provider === null) {
       throw new AppError("NOT_FOUND", "Provider was not found.", 404);

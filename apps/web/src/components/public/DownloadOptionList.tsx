@@ -57,7 +57,6 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
             <a
               key={`${item.url}-${index}`}
               href={downloadHref}
-              target="_blank"
               rel="noopener noreferrer"
               download
               className="flex min-h-[48px] items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-slate-800 shadow-xs transition hover:border-teal-500 hover:bg-teal-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 dark:border-slate-800 dark:bg-slate-850 dark:text-slate-200 dark:hover:border-teal-500 dark:hover:bg-teal-950/30"

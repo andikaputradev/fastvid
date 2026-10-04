@@ -81,6 +81,21 @@ export function createDownloadStreamHandler(options: DownloadStreamHandlerOption
     }
 
     const contentType = upstreamRes.headers.get("content-type") || "application/octet-stream";
+    if (contentType.includes("application/json")) {
+      const text = await upstreamRes.text();
+      let msg = "Gagal mengunduh media dari server penyedia.";
+      try {
+        const json = JSON.parse(text) as { message?: string; msg?: string; error?: string };
+        const found = json.message || json.msg || json.error;
+        if (typeof found === "string" && found.trim().length > 0) {
+          msg = found.trim();
+        }
+      } catch {
+        // fallback to default msg
+      }
+      throw new AppError("UPSTREAM_ERROR", msg, 502);
+    }
+
     const contentLength = upstreamRes.headers.get("content-length");
     const safeFilename = (payload.filename || "fastvid_download.mp4").replaceAll(/[^\w.-]/g, "_");
 

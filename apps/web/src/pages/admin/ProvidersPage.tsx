@@ -18,14 +18,14 @@ import { adminApi } from "../../lib/adminApi";
 import type { AdminProvider, ProviderInput } from "../../lib/adminApi";
 
 const providerSchema = z.object({
-  api_key: z.string(),
-  base_url: z.string().url(),
+  api_key: z.string().optional().default(""),
+  base_url: z.string().min(1, "Base URL wajib diisi.").url("Format URL tidak valid (harus http atau https)."),
   daily_limit: z.coerce.number().int().min(1).max(1_000_000),
   is_active: z.boolean(),
-  name: z.string().min(1).max(100),
-  platform_slug: z.string().min(1).max(50),
+  name: z.string().min(1, "Name wajib diisi.").max(100),
+  platform_slug: z.string().trim().min(1, "Pilih platform terlebih dahulu.").max(50),
   priority: z.coerce.number().int().min(1).max(100),
-  slug: z.string().min(1).max(50)
+  slug: z.string().trim().min(1, "Slug wajib diisi.").max(50)
 });
 
 type ProviderForm = z.infer<typeof providerSchema>;
@@ -55,15 +55,16 @@ function providerToForm(provider: AdminProvider): ProviderForm {
 }
 
 function formToPayload(values: ProviderForm, includeEmptyApiKey: boolean): ProviderInput {
+  const trimmedKey = values.api_key.trim();
   return {
-    base_url: values.base_url,
+    base_url: values.base_url.trim(),
     daily_limit: values.daily_limit,
-    ...(values.api_key.length > 0 || includeEmptyApiKey ? { api_key: values.api_key || null } : {}),
+    ...(trimmedKey.length > 0 || includeEmptyApiKey ? { api_key: trimmedKey.length > 0 ? trimmedKey : null } : {}),
     is_active: values.is_active,
-    name: values.name,
-    platform_slug: values.platform_slug,
+    name: values.name.trim(),
+    platform_slug: values.platform_slug.trim(),
     priority: values.priority,
-    slug: values.slug
+    slug: values.slug.trim()
   };
 }
 
@@ -74,6 +75,11 @@ export function ProvidersPage() {
     queryKey: ["admin", "providers"],
     queryFn: adminApi.listProviders
   });
+  const platforms = useQuery({
+    queryKey: ["admin", "platforms"],
+    queryFn: adminApi.listPlatforms
+  });
+  const platformList = platforms.data?.platforms ?? [];
   const form = useForm<ProviderForm>({
     resolver: zodResolver(providerSchema),
     defaultValues: emptyProviderForm
@@ -121,7 +127,36 @@ export function ProvidersPage() {
           {saveProvider.error ? <FormError error={saveProvider.error} /> : null}
           <TextInput form={form} name="name" label="Name" />
           <TextInput form={form} name="slug" label="Slug" />
-          <TextInput form={form} name="platform_slug" label="Platform Slug" />
+          <div className="grid gap-1 text-sm font-medium text-foreground">
+            <label htmlFor="platform_slug">Platform Slug</label>
+            {platformList.length > 0 ? (
+              <select
+                id="platform_slug"
+                className="h-11 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary"
+                {...form.register("platform_slug")}
+              >
+                <option value="">-- Pilih Platform --</option>
+                {platformList.map((platform) => (
+                  <option key={platform.id} value={platform.slug}>
+                    {platform.name} ({platform.slug})
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                id="platform_slug"
+                type="text"
+                placeholder="cth: tiktok"
+                className="h-11 rounded-md border border-border bg-card px-3 text-foreground outline-none focus:border-primary"
+                {...form.register("platform_slug")}
+              />
+            )}
+            {form.formState.errors.platform_slug ? (
+              <span className="text-xs text-red-600 dark:text-red-400">
+                {String(form.formState.errors.platform_slug.message)}
+              </span>
+            ) : null}
+          </div>
           <TextInput form={form} name="base_url" label="Base URL" />
           <div>
             <TextInput form={form} name="api_key" label="API Key" type="password" />

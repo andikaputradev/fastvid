@@ -283,10 +283,21 @@ export function createDownloadHandler(options: DownloadHandlerOptions = {}) {
 
         const streamEncryptionKey = env.API_KEY_ENCRYPTION_KEY;
         const mappedMedia = mediaResult.media.map((item, index) => {
-          const needsTunnel = item.headers !== undefined || item.url.includes("tiktok.com/video/") || item.url.includes("tiktokcdn.com");
-          if (needsTunnel) {
-            const ext = item.format === "mp3" ? "mp3" : item.format === "image" ? "jpg" : "mp4";
-            const safeTitle = (mediaResult.title || "video").replaceAll(/[^\w.-]/g, "_").slice(0, 30);
+          const isAlreadyStream = item.url.startsWith("/api/v1/download/stream");
+          if (!isAlreadyStream) {
+            const ext =
+              item.format === "image"
+                ? "jpg"
+                : /^[a-z0-9]{2,5}$/i.test(item.format)
+                  ? item.format.toLowerCase()
+                  : "mp4";
+            const sanitizedTitle = (mediaResult.title || "")
+              .trim()
+              .replaceAll(/[^\w.-]/g, "_")
+              .replace(/_+/g, "_")
+              .replace(/^_+|_+$/g, "")
+              .slice(0, 30);
+            const safeTitle = sanitizedTitle.length > 0 ? sanitizedTitle : "media";
             const filename = `fastvid_${safeTitle}_${index + 1}.${ext}`;
             const token = createStreamToken(
               {

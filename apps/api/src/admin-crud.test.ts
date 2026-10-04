@@ -808,6 +808,56 @@ test("admin provider list masks API key material", async () => {
   }
 });
 
+test("admin provider create rejects nonexistent platform with 400", async () => {
+  const { repositories } = createMockRepositories();
+  const app = await buildTestApp(repositories);
+
+  try {
+    const { cookie, csrfToken } = await login(app);
+    const response = await inject(app, "POST", "/api/v1/admin/providers", {
+      cookie,
+      csrfToken,
+      payload: {
+        name: "Provider",
+        slug: "new-provider",
+        platform_slug: "nonexistent-platform",
+        base_url: "https://provider.example.com",
+        api_key: null
+      }
+    });
+
+    assert.equal(response.statusCode, 400, response.body);
+    assert.equal(response.body.includes("tidak ditemukan"), true);
+  } finally {
+    await app.close();
+  }
+});
+
+test("admin provider create rejects duplicate slug and platform with 409", async () => {
+  const { repositories } = createMockRepositories();
+  const app = await buildTestApp(repositories);
+
+  try {
+    const { cookie, csrfToken } = await login(app);
+    const response = await inject(app, "POST", "/api/v1/admin/providers", {
+      cookie,
+      csrfToken,
+      payload: {
+        name: "Provider",
+        slug: "mock-provider",
+        platform_slug: "tiktok",
+        base_url: "https://provider.example.com",
+        api_key: null
+      }
+    });
+
+    assert.equal(response.statusCode, 409, response.body);
+    assert.equal(response.body.includes("sudah ada"), true);
+  } finally {
+    await app.close();
+  }
+});
+
 test("admin ad update writes audit log", async () => {
   const { repositories, state } = createMockRepositories();
   const app = await buildTestApp(repositories);
