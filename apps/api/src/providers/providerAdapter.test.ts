@@ -211,3 +211,122 @@ test("ProviderAdapter propagates specific provider error message when status is 
   );
 });
 
+test("ProviderAdapter handles Jerexd aiov2 format and reroutes fastdl endpoint", async () => {
+  const { ProviderAdapter } = await import("./providerAdapter.js");
+  const encResult = encryptApiKey("jerexd-test-api-key", encryptionKey);
+  assert.equal(encResult.ok, true);
+
+  const jerexdProvider: PublicProviderRecord = {
+    ...publicProvider,
+    baseUrl: "https://api.jerexd.my.id/api/downloader/fastdl",
+    apiKeyEncrypted: encResult.value
+  };
+
+  let capturedUrl: string | undefined;
+
+  const mockFetch = async (input: string | URL | Request): Promise<Response> => {
+    capturedUrl = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+
+    return new Response(
+      JSON.stringify({
+        statusCode: 200,
+        status: true,
+        result: {
+          title: "TikTok Video Title",
+          author: "TikTokCreator",
+          thumbnail: "https://cdn.example.test/thumb.jpg",
+          duration: 24564,
+          medias: [
+            {
+              url: "https://cdn.example.test/video-hd.mp4",
+              data_size: 1967308,
+              quality: "hd_no_watermark",
+              extension: "mp4",
+              type: "video"
+            },
+            {
+              url: "https://cdn.example.test/video-nowm.mp4",
+              data_size: 1200000,
+              quality: "no_watermark",
+              extension: "mp4",
+              type: "video"
+            },
+            {
+              url: "https://cdn.example.test/audio.mp3",
+              duration: 24,
+              quality: "audio",
+              extension: "mp3",
+              type: "audio"
+            }
+          ]
+        }
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+  };
+
+  const adapter = new ProviderAdapter({
+    fetchFn: mockFetch as typeof fetch,
+    ssrfResolveHostname: async () => [{ address: "93.184.216.34", family: 4 }]
+  });
+
+  const result = await adapter.extractMedia("https://www.tiktok.com/@tiktok/video/7106594312292453675", jerexdProvider);
+
+  assert.match(capturedUrl ?? "", /\/api\/downloader\/aiov2/);
+  assert.match(capturedUrl ?? "", /apikey=jerexd-test-api-key/);
+  assert.equal(result.title, "TikTok Video Title");
+  assert.equal(result.author, "TikTokCreator");
+  assert.equal(result.thumbnailUrl, "https://cdn.example.test/thumb.jpg");
+  assert.equal(result.duration, 25);
+  assert.equal(result.media.length, 3);
+  assert.equal(result.media[0]?.quality, "HD (No Watermark)");
+  assert.equal(result.media[0]?.format, "mp4");
+  assert.equal(result.media[0]?.sizeBytes, 1967308);
+  assert.equal(result.media[1]?.quality, "No Watermark");
+  assert.equal(result.media[2]?.quality, "Audio (MP3)");
+  assert.equal(result.media[2]?.format, "mp3");
+});
+
+test("ProviderAdapter parses duration strings like MM:SS and lengthSeconds", async () => {
+  const { ProviderAdapter } = await import("./providerAdapter.js");
+  const ytProvider: PublicProviderRecord = {
+    ...publicProvider,
+    baseUrl: "https://api.jerexd.my.id/api/downloader/aiov2"
+  };
+
+  const mockFetch = async (): Promise<Response> => {
+    return new Response(
+      JSON.stringify({
+        status: true,
+        result: {
+          title: "Rick Astley - Never Gonna Give You Up",
+          author: "Rick Astley",
+          duration: "3:33",
+          lengthSeconds: "213",
+          medias: [
+            {
+              url: "https://cdn.example.test/yt.mp4",
+              quality: "720p",
+              extension: "mp4",
+              type: "video"
+            }
+          ]
+        }
+      }),
+      { status: 200, headers: { "content-type": "application/json" } }
+    );
+  };
+
+  const adapter = new ProviderAdapter({
+    fetchFn: mockFetch as typeof fetch,
+    ssrfResolveHostname: async () => [{ address: "93.184.216.34", family: 4 }]
+  });
+
+  const result = await adapter.extractMedia("https://www.youtube.com/watch?v=dQw4w9WgXcQ", ytProvider);
+
+  assert.equal(result.duration, 213);
+  assert.equal(result.title, "Rick Astley - Never Gonna Give You Up");
+  assert.equal(result.media.length, 1);
+});
+
+

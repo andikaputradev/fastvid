@@ -160,7 +160,12 @@ export function ProvidersPage() {
               </span>
             ) : null}
           </div>
-          <TextInput form={form} name="base_url" label="Base URL" />
+          <div>
+            <TextInput form={form} name="base_url" label="Base URL" />
+            <p className="mt-1 text-[11px] text-muted-foreground">
+              Contoh: <code>https://api.jerexd.my.id/api/downloader/aiov2</code> (Universal Sosmed), <code>https://api.kyzzz.xyz</code>, atau REST downloader endpoint lainnya.
+            </p>
+          </div>
           <div>
             <TextInput form={form} name="api_key" label="API Key" type="password" />
             <p className="mt-1 text-[11px] text-muted-foreground">

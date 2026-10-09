@@ -42,6 +42,34 @@ function resolveApiKey(encryptedKey: string | null): string | null {
   }
 }
 
+function parseDuration(val: unknown): number | null {
+  if (typeof val === "number" && Number.isFinite(val)) {
+    return val > 10_000 ? Math.round(val / 1000) : val;
+  }
+  if (typeof val === "string") {
+    const trimmed = val.trim();
+    if (trimmed.length === 0) {
+      return null;
+    }
+    const asNum = Number(trimmed);
+    if (!Number.isNaN(asNum) && Number.isFinite(asNum)) {
+      return asNum > 10_000 ? Math.round(asNum / 1000) : asNum;
+    }
+    if (trimmed.includes(":")) {
+      const parts = trimmed.split(":").map(Number);
+      if (parts.every((p) => Number.isFinite(p))) {
+        if (parts.length === 2 && parts[0] !== undefined && parts[1] !== undefined) {
+          return parts[0] * 60 + parts[1];
+        }
+        if (parts.length === 3 && parts[0] !== undefined && parts[1] !== undefined && parts[2] !== undefined) {
+          return parts[0] * 3600 + parts[1] * 60 + parts[2];
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function normalizeMediaItems(payload: Record<string, unknown> | unknown[], _platformSlug: string): ExtractedMediaItem[] {
   const items: ExtractedMediaItem[] = [];
   const seenUrls = new Set<string>();
@@ -408,30 +436,80 @@ function normalizeMediaItems(payload: Record<string, unknown> | unknown[], _plat
     });
   }
 
-  // 8. Standard formats / media / links / urls / downloads arrays
-  const formatsArray = Array.isArray(payload.media)
-    ? payload.media
-    : Array.isArray(payload.formats)
-      ? payload.formats
-      : Array.isArray(payload.links)
-        ? payload.links
-        : Array.isArray(payload.urls)
-          ? payload.urls
-          : Array.isArray(payload.downloads)
-            ? payload.downloads
-            : null;
+  // 8. Standard formats / media / medias / links / urls / downloads arrays
+  const candidateArrays = [
+    payload.media,
+    payload.medias,
+    payload.formats,
+    payload.links,
+    payload.urls,
+    payload.downloads
+  ].filter(Array.isArray) as unknown[][];
 
-  if (formatsArray !== null) {
+  for (const formatsArray of candidateArrays) {
     for (const f of formatsArray) {
       if (typeof f === "object" && f !== null) {
         const item = f as Record<string, unknown>;
         const url = typeof item.url === "string" ? item.url : typeof item.link === "string" ? item.link : null;
         if (url) {
+          const rawExt = typeof item.extension === "string" ? item.extension.toLowerCase().trim() : "";
+          const rawType = typeof item.type === "string" ? item.type.toLowerCase().trim() : "";
+          let itemFormat = typeof item.format === "string" ? item.format.toLowerCase().trim() : "";
+          if (!itemFormat && rawExt) {
+            itemFormat = rawExt;
+          }
+          if (!itemFormat && rawType === "audio") {
+            itemFormat = "mp3";
+          }
+          if (!itemFormat && (rawType === "photo" || rawType === "image")) {
+            itemFormat = "image";
+          }
+          if (!itemFormat) {
+            itemFormat = "mp4";
+          }
+
+          let qualityStr =
+            typeof item.quality === "string" && item.quality.trim().length > 0
+              ? item.quality.trim()
+              : typeof item.label === "string" && item.label.trim().length > 0
+                ? item.label.trim()
+                : typeof item.resolution === "string" && item.resolution.trim().length > 0
+                  ? item.resolution.trim()
+                  : rawType === "audio"
+                    ? "Audio (MP3)"
+                    : "Standard";
+
+          if (qualityStr === "hd_no_watermark") {
+            qualityStr = "HD (No Watermark)";
+          } else if (qualityStr === "no_watermark") {
+            qualityStr = "No Watermark";
+          } else if (qualityStr === "watermark") {
+            qualityStr = "With Watermark";
+          } else if (qualityStr === "audio") {
+            qualityStr = "Audio (MP3)";
+          }
+
+          const hasAudio =
+            typeof item.hasAudio === "boolean"
+              ? item.hasAudio
+              : rawType === "photo" || rawType === "image"
+                ? false
+                : true;
+
+          const sizeBytes =
+            typeof item.size === "number"
+              ? item.size
+              : typeof item.sizeBytes === "number"
+                ? item.sizeBytes
+                : typeof item.data_size === "number"
+                  ? item.data_size
+                  : undefined;
+
           addItem({
-            format: typeof item.format === "string" ? item.format : "mp4",
-            hasAudio: item.hasAudio !== false,
-            quality: typeof item.quality === "string" ? item.quality : typeof item.resolution === "string" ? item.resolution : "Standard",
-            sizeBytes: typeof item.size === "number" ? item.size : typeof item.sizeBytes === "number" ? item.sizeBytes : undefined,
+            format: itemFormat,
+            hasAudio,
+            quality: qualityStr,
+            sizeBytes,
             url
           });
         }
@@ -560,6 +638,14 @@ export class ProviderAdapter {
     if ((parsedBaseUrl.pathname === "/" || parsedBaseUrl.pathname === "") && parsedBaseUrl.hostname.includes("kyzzz.xyz")) {
       parsedBaseUrl.pathname = `/api/download/${provider.platformSlug}`;
     }
+    if ((parsedBaseUrl.pathname === "/" || parsedBaseUrl.pathname === "") && parsedBaseUrl.hostname.includes("jerexd.my.id")) {
+      parsedBaseUrl.pathname = "/api/downloader/aiov2";
+    }
+
+    // Proactively reroute broken upstream /fastdl on jerexd.my.id to the working /aiov2 endpoint
+    if (parsedBaseUrl.hostname.includes("jerexd.my.id") && parsedBaseUrl.pathname.includes("/fastdl")) {
+      parsedBaseUrl.pathname = "/api/downloader/aiov2";
+    }
 
     const ssrfOptions = this.ssrfResolveHostname
       ? { resolveHostname: this.ssrfResolveHostname }
@@ -674,7 +760,45 @@ export class ProviderAdapter {
       throw new AppError("PROVIDER_ERROR", "Payload provider tidak valid.", 502);
     }
 
-    const payload = jsonPayload as Record<string, unknown>;
+    let payload = jsonPayload as Record<string, unknown>;
+
+    // If request to jerexd.my.id fails or returns URL_IS_EMPTY, try fallback to /api/downloader/aiov2 if not already on it
+    const hasJerexdUrlEmpty =
+      typeof payload.result === "object" &&
+      payload.result !== null &&
+      !Array.isArray(payload.result) &&
+      (payload.result as Record<string, unknown>).code === "URL_IS_EMPTY";
+
+    if (
+      parsedBaseUrl.hostname.includes("jerexd.my.id") &&
+      !parsedBaseUrl.pathname.includes("/aiov2") &&
+      (!response.ok || payload.status === false || hasJerexdUrlEmpty)
+    ) {
+      try {
+        const fallbackUrl = new URL(parsedBaseUrl.href);
+        fallbackUrl.pathname = "/api/downloader/aiov2";
+        fallbackUrl.searchParams.set("url", targetUrl);
+        if (apiKey) {
+          fallbackUrl.searchParams.set("apikey", apiKey);
+        }
+        const fbRes = await this.fetchFn(fallbackUrl.href, {
+          method: "GET",
+          headers,
+          signal: controller.signal
+        });
+        if (fbRes.ok) {
+          const fbJson = await fbRes.json();
+          if (typeof fbJson === "object" && fbJson !== null) {
+            const fbPayload = fbJson as Record<string, unknown>;
+            if (fbPayload.status !== false && fbPayload.result) {
+              payload = fbPayload;
+            }
+          }
+        }
+      } catch {
+        // Fallback failed, continue to standard error checks below
+      }
+    }
 
     // Provider-level error checking (e.g. status: false or non-ok with error message)
     if (!response.ok || payload.status === false || payload.success === false) {
@@ -768,11 +892,10 @@ export class ProviderAdapter {
               ? (videoObj.dynamicCover as string)
               : null;
 
-    const duration = typeof rootData.duration === "number"
-      ? rootData.duration
-      : typeof videoObj?.duration === "number"
-        ? (videoObj.duration as number)
-        : null;
+    const duration =
+      parseDuration(rootData.duration) ??
+      parseDuration(rootData.lengthSeconds) ??
+      parseDuration(videoObj?.duration);
 
     return {
       title,
