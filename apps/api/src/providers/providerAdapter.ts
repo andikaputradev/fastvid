@@ -42,7 +42,7 @@ function resolveApiKey(encryptedKey: string | null): string | null {
   }
 }
 
-function normalizeMediaItems(payload: Record<string, unknown>, _platformSlug: string): ExtractedMediaItem[] {
+function normalizeMediaItems(payload: Record<string, unknown> | unknown[], _platformSlug: string): ExtractedMediaItem[] {
   const items: ExtractedMediaItem[] = [];
   const seenUrls = new Set<string>();
 
@@ -57,6 +57,36 @@ function normalizeMediaItems(payload: Record<string, unknown>, _platformSlug: st
     seenUrls.add(cleanUrl);
     items.push({ ...item, url: cleanUrl });
   };
+
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      if (typeof item === "object" && item !== null) {
+        const obj = item as Record<string, unknown>;
+        const u =
+          typeof obj.url === "string"
+            ? obj.url
+            : typeof obj.download_url === "string"
+              ? obj.download_url
+              : typeof obj.downloadUrl === "string"
+                ? obj.downloadUrl
+                : null;
+        if (u) {
+          addItem({
+            format:
+              typeof obj.format === "string"
+                ? obj.format
+                : typeof obj.type === "string" && obj.type === "photo"
+                  ? "image"
+                  : "mp4",
+            hasAudio: obj.hasAudio !== false,
+            quality: typeof obj.quality === "string" ? obj.quality : "HD Quality",
+            url: u
+          });
+        }
+      }
+    }
+    return items;
+  }
 
   let videoHeaders: Record<string, string> | undefined;
 
@@ -553,8 +583,13 @@ export class ProviderAdapter {
       headers["X-RapidAPI-Key"] = apiKey;
     }
 
-    // Determine if endpoint prefers GET (kyzzz, standard REST download query APIs)
-    const prefersGet = parsedBaseUrl.hostname.includes("kyzzz.xyz") || parsedBaseUrl.pathname.includes("/api/download/");
+    // Determine if endpoint prefers GET (kyzzz, jerexd, standard REST download query APIs)
+    const prefersGet =
+      parsedBaseUrl.hostname.includes("kyzzz.xyz") ||
+      parsedBaseUrl.hostname.includes("jerexd.my.id") ||
+      parsedBaseUrl.pathname.includes("/api/download/") ||
+      parsedBaseUrl.pathname.includes("/api/downloader/") ||
+      parsedBaseUrl.searchParams.has("url");
 
     // 3. Execute request with timeout
     const controller = new AbortController();
@@ -653,6 +688,20 @@ export class ProviderAdapter {
       throw new AppError("PROVIDER_ERROR", errorMsg, 422);
     }
 
+    // Check nested result errors (e.g. Jerexd/FastDL returning code: "URL_IS_EMPTY" or error inside result)
+    if (typeof payload.result === "object" && payload.result !== null && !Array.isArray(payload.result)) {
+      const resObj = payload.result as Record<string, unknown>;
+      if (resObj.code === "URL_IS_EMPTY") {
+        throw new AppError("PROVIDER_ERROR", "Provider downloader tidak dapat memproses URL ini atau format URL belum didukung upstream provider.", 422);
+      }
+      if (resObj.status === false && typeof resObj.message === "string") {
+        throw new AppError("PROVIDER_ERROR", resObj.message, 422);
+      }
+      if (typeof resObj.error === "string" && resObj.error.trim().length > 0) {
+        throw new AppError("PROVIDER_ERROR", resObj.error.trim(), 422);
+      }
+    }
+
     // Unwrap { data: ... } or { result: ... } if nested
     const rootData = (typeof payload.data === "object" && payload.data !== null)
       ? (payload.data as Record<string, unknown>)
@@ -703,6 +752,8 @@ export class ProviderAdapter {
       author = rootData.nickname.trim();
     } else if (typeof rootData.author_name === "string" && rootData.author_name.trim().length > 0) {
       author = rootData.author_name.trim();
+    } else if (typeof rootData.channel === "string" && rootData.channel.trim().length > 0) {
+      author = rootData.channel.trim();
     }
 
     const thumbnailUrl = typeof rootData.thumbnail === "string"

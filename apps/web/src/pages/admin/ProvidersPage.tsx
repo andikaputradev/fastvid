@@ -136,6 +136,7 @@ export function ProvidersPage() {
                 {...form.register("platform_slug")}
               >
                 <option value="">-- Pilih Platform --</option>
+                <option value="all">Semua Platform (All Sosmed / Universal Provider)</option>
                 {platformList.map((platform) => (
                   <option key={platform.id} value={platform.slug}>
                     {platform.name} ({platform.slug})

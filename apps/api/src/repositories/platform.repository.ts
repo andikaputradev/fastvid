@@ -78,10 +78,17 @@ export function createPlatformRepository(db: DbClient): PlatformRepository {
     async getPlatformByDomain(hostname) {
       return safeQuery(async () => {
         const rows = await db.select().from(socialPlatforms);
-        const platform = rows
-          .map(toPlatformRecord)
-          .find((candidate) => checkDomainAllowlist(new URL(`https://${hostname}/`), candidate.baseDomains).ok);
-        return platform ?? null;
+        const candidates = rows.map(toPlatformRecord);
+        const specific = candidates.find((candidate) =>
+          checkDomainAllowlist(new URL(`https://${hostname}/`), candidate.baseDomains).ok
+        );
+        if (specific) {
+          return specific;
+        }
+        const universal = candidates.find((candidate) =>
+          candidate.slug === "all" || candidate.baseDomains.includes("*")
+        );
+        return universal ?? null;
       }, null);
     },
 

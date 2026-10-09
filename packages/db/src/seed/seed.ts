@@ -159,7 +159,8 @@ export const adSettingsSeed = [
   { slotKey: "header", providerName: null, adCode: null, isActive: false },
   { slotKey: "in_content", providerName: null, adCode: null, isActive: false },
   { slotKey: "sidebar", providerName: null, adCode: null, isActive: false },
-  { slotKey: "footer", providerName: null, adCode: null, isActive: false }
+  { slotKey: "footer", providerName: null, adCode: null, isActive: false },
+  { slotKey: "popup", providerName: null, adCode: null, isActive: false }
 ] satisfies NewAdSetting[];
 
 export const rateLimitRulesSeed = [

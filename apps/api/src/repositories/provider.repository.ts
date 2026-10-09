@@ -1,4 +1,4 @@
-import { and, asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, or, sql } from "drizzle-orm";
 import { apiProviders, type DbClient } from "@vidsaveid/db";
 
 export interface PublicProviderRecord {
@@ -48,7 +48,10 @@ export function createProviderRepository(db: DbClient): ProviderRepository {
           .from(apiProviders)
           .where(
             and(
-              eq(apiProviders.platformSlug, platformSlug),
+              or(
+                eq(apiProviders.platformSlug, platformSlug),
+                eq(apiProviders.platformSlug, "all")
+              ),
               eq(apiProviders.isActive, true)
             )
           )
