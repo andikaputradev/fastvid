@@ -17,6 +17,8 @@ describe("FirstVisitAdModal", () => {
   });
 
   it("renders ad modal on first visit and closes upon clicking button", async () => {
+    const windowOpenSpy = vi.spyOn(window, "open").mockReturnValue({ closed: false } as Window);
+
     vi.stubGlobal(
       "fetch",
       vi.fn(async () =>
@@ -52,6 +54,11 @@ describe("FirstVisitAdModal", () => {
     const closeButton = screen.getByRole("button", { name: /Lanjutkan ke Website/i });
     fireEvent.click(closeButton);
 
+    expect(windowOpenSpy).toHaveBeenCalledWith(
+      "https://wahyuandikaputra.my.id/",
+      "_blank",
+      "noopener,noreferrer"
+    );
     expect(localStorage.getItem("fastvid_first_visit_ad_shown")).toBe("true");
     expect(screen.queryByRole("dialog")).toBeNull();
   });

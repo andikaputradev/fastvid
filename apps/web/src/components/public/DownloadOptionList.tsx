@@ -1,6 +1,9 @@
-import { Download, FileImage, Music, Video } from "lucide-react";
+import { Download, FileImage, Music, Sparkles, Video } from "lucide-react";
+import { useState } from "react";
 import type { DownloadResponse } from "../../lib/api";
+import { handleAdCloseRedirect, isHdQuality, triggerBrowserDownload } from "../../lib/adRedirect";
 import { getApiBaseUrl } from "../../lib/env";
+import { DownloadAdModal, type PendingDownloadItem } from "../ads/DownloadAdModal";
 
 interface DownloadOptionListProps {
   result: DownloadResponse;
@@ -14,6 +17,9 @@ function formatBytes(bytes?: number): string | null {
 }
 
 export function DownloadOptionList({ result }: DownloadOptionListProps) {
+  const [unlockedUrls, setUnlockedUrls] = useState<Set<string>>(() => new Set());
+  const [pendingHdItem, setPendingHdItem] = useState<PendingDownloadItem | null>(null);
+
   const mediaItems = result.media ?? [];
 
   if (mediaItems.length === 0) {
@@ -27,6 +33,43 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
       </div>
     );
   }
+
+  const handleHdClick = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    item: { url: string; quality: string; format: string },
+    downloadHref: string
+  ) => {
+    if (unlockedUrls.has(item.url)) {
+      // Already viewed ad and unlocked, proceed with standard direct download
+      return;
+    }
+
+    e.preventDefault();
+    setPendingHdItem({
+      downloadHref,
+      format: item.format,
+      quality: item.quality,
+      url: item.url
+    });
+  };
+
+  const handleCloseAndDownload = () => {
+    if (!pendingHdItem) return;
+
+    const { downloadHref, url } = pendingHdItem;
+
+    // 1. Mark as unlocked for future clicks
+    setUnlockedUrls((prev) => new Set([...prev, url]));
+
+    // 2. Close modal state
+    setPendingHdItem(null);
+
+    // 3. Redirect to the requested sponsor website on ad close
+    handleAdCloseRedirect();
+
+    // 4. Trigger the actual browser file download
+    triggerBrowserDownload(downloadHref);
+  };
 
   return (
     <div className="mt-4 space-y-2">
@@ -53,12 +96,20 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
             ? `${getApiBaseUrl()}${rawUrl}`
             : rawUrl;
 
+          const isHd = isHdQuality(item, mediaItems);
+          const isUnlocked = unlockedUrls.has(item.url);
+
           return (
             <a
               key={`${item.url}-${index}`}
               href={downloadHref}
               rel="noopener noreferrer"
               download
+              onClick={(e) => {
+                if (isHd && !isUnlocked) {
+                  handleHdClick(e, item, downloadHref);
+                }
+              }}
               className="flex min-h-[48px] items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 text-slate-800 shadow-xs transition hover:border-teal-500 hover:bg-teal-50/40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-teal-600 dark:border-slate-800 dark:bg-slate-850 dark:text-slate-200 dark:hover:border-teal-500 dark:hover:bg-teal-950/30"
             >
               <div className="flex items-center gap-2.5 overflow-hidden">
@@ -80,8 +131,20 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
                   )}
                 </div>
                 <div className="min-w-0 text-left">
-                  <div className="truncate text-xs font-bold text-slate-900 dark:text-white">
-                    {item.quality}
+                  <div className="flex items-center gap-1.5 truncate text-xs font-bold text-slate-900 dark:text-white">
+                    <span>{item.quality}</span>
+                    {isHd ? (
+                      isUnlocked ? (
+                        <span className="inline-flex items-center rounded-full bg-emerald-500/10 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          HD Siap
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-500/10 px-1.5 py-0.2 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                          <Sparkles className="h-2.5 w-2.5" />
+                          HD Iklan
+                        </span>
+                      )
+                    ) : null}
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400">
                     <span className="uppercase font-semibold text-slate-700 dark:text-slate-300">
@@ -99,6 +162,11 @@ export function DownloadOptionList({ result }: DownloadOptionListProps) {
           );
         })}
       </div>
+
+      <DownloadAdModal
+        item={pendingHdItem}
+        onCloseAndDownload={handleCloseAndDownload}
+      />
     </div>
   );
 }

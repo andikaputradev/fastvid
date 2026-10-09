@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Megaphone, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { api } from "../../lib/api";
+import { handleAdCloseRedirect } from "../../lib/adRedirect";
 import { Button } from "../ui/button";
 import { AdScriptContainer } from "./AdScriptContainer";
 
@@ -36,6 +37,7 @@ export function FirstVisitAdModal() {
       // Ignore localStorage errors
     }
     setIsOpen(false);
+    handleAdCloseRedirect();
   };
 
   useEffect(() => {
