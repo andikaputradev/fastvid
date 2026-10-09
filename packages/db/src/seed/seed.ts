@@ -98,6 +98,24 @@ export const siteSettingsSeed = [
 
 export const socialPlatformsSeed = [
   {
+    name: "Semua Platform (All Sosmed)",
+    slug: "all",
+    baseDomains: [
+      "tiktok.com",
+      "instagram.com",
+      "youtube.com",
+      "facebook.com",
+      "twitter.com",
+      "x.com",
+      "threads.net",
+      "pinterest.com",
+      "snackvideo.com",
+      "likee.video"
+    ],
+    isActive: true,
+    status: "active"
+  },
+  {
     name: "TikTok",
     slug: "tiktok",
     baseDomains: ["tiktok.com", "www.tiktok.com", "vt.tiktok.com", "vm.tiktok.com", "m.tiktok.com"],

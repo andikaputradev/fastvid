@@ -829,7 +829,37 @@ export async function adminCrudRoute(app: FastifyInstance, options: AdminCrudRou
     const input = providerCreateInput(parseBody(providerInputSchema, request.body));
 
     const platforms = await repositories.admin.listPlatforms();
-    const platform = platforms.find((p) => p.slug === input.platformSlug);
+    let platform = platforms.find((p) => p.slug === input.platformSlug);
+    if (!platform && input.platformSlug === "all") {
+      try {
+        platform = await repositories.admin.createPlatform({
+          name: "Semua Platform (All Sosmed)",
+          slug: "all",
+          baseDomains: [
+            "tiktok.com",
+            "instagram.com",
+            "youtube.com",
+            "facebook.com",
+            "twitter.com",
+            "x.com",
+            "threads.net",
+            "pinterest.com",
+            "snackvideo.com",
+            "likee.video"
+          ],
+          allowedUrlPatterns: null,
+          blockedUrlPatterns: null,
+          isActive: true,
+          iconUrl: null,
+          description: "Universal social media downloader platform",
+          maxRequestsPerMinute: 60,
+          status: "active"
+        });
+      } catch {
+        const reloaded = await repositories.admin.listPlatforms();
+        platform = reloaded.find((p) => p.slug === "all");
+      }
+    }
     if (!platform) {
       throw new AppError(
         "VALIDATION_FAILED",
@@ -892,7 +922,37 @@ export async function adminCrudRoute(app: FastifyInstance, options: AdminCrudRou
 
     if (input.platformSlug !== undefined) {
       const platforms = await repositories.admin.listPlatforms();
-      const platform = platforms.find((p) => p.slug === input.platformSlug);
+      let platform = platforms.find((p) => p.slug === input.platformSlug);
+      if (!platform && input.platformSlug === "all") {
+        try {
+          platform = await repositories.admin.createPlatform({
+            name: "Semua Platform (All Sosmed)",
+            slug: "all",
+            baseDomains: [
+              "tiktok.com",
+              "instagram.com",
+              "youtube.com",
+              "facebook.com",
+              "twitter.com",
+              "x.com",
+              "threads.net",
+              "pinterest.com",
+              "snackvideo.com",
+              "likee.video"
+            ],
+            allowedUrlPatterns: null,
+            blockedUrlPatterns: null,
+            isActive: true,
+            iconUrl: null,
+            description: "Universal social media downloader platform",
+            maxRequestsPerMinute: 60,
+            status: "active"
+          });
+        } catch {
+          const reloaded = await repositories.admin.listPlatforms();
+          platform = reloaded.find((p) => p.slug === "all");
+        }
+      }
       if (!platform) {
         throw new AppError(
           "VALIDATION_FAILED",

@@ -137,11 +137,13 @@ export function ProvidersPage() {
               >
                 <option value="">-- Pilih Platform --</option>
                 <option value="all">Semua Platform (All Sosmed / Universal Provider)</option>
-                {platformList.map((platform) => (
-                  <option key={platform.id} value={platform.slug}>
-                    {platform.name} ({platform.slug})
-                  </option>
-                ))}
+                {platformList
+                  .filter((platform) => platform.slug !== "all")
+                  .map((platform) => (
+                    <option key={platform.id} value={platform.slug}>
+                      {platform.name} ({platform.slug})
+                    </option>
+                  ))}
               </select>
             ) : (
               <input

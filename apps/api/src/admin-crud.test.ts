@@ -833,6 +833,33 @@ test("admin provider create rejects nonexistent platform with 400", async () => 
   }
 });
 
+test("admin provider create automatically provisions 'all' platform if missing", async () => {
+  const { repositories, state } = createMockRepositories();
+  const app = await buildTestApp(repositories);
+
+  try {
+    const { cookie, csrfToken } = await login(app);
+    const response = await inject(app, "POST", "/api/v1/admin/providers", {
+      cookie,
+      csrfToken,
+      payload: {
+        name: "Universal Provider",
+        slug: "universal-provider",
+        platform_slug: "all",
+        base_url: "https://universal.example.com",
+        api_key: null
+      }
+    });
+
+    assert.equal(response.statusCode, 200, response.body);
+    const created = JSON.parse(response.body) as ApiSuccessResponse<{ provider: { platform_slug: string } }>;
+    assert.equal(created.data.provider.platform_slug, "all");
+    assert.equal(state.platforms.some((p) => p.slug === "all"), true);
+  } finally {
+    await app.close();
+  }
+});
+
 test("admin provider create rejects duplicate slug and platform with 409", async () => {
   const { repositories } = createMockRepositories();
   const app = await buildTestApp(repositories);
