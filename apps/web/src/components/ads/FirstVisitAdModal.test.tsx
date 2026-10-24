@@ -55,7 +55,7 @@ describe("FirstVisitAdModal", () => {
     fireEvent.click(closeButton);
 
     expect(windowOpenSpy).toHaveBeenCalledWith(
-      "https://wahyuandikaputra.my.id/",
+      "https://andikadev.com/",
       "_blank",
       "noopener,noreferrer"
     );

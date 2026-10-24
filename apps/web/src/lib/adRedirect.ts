@@ -1,4 +1,4 @@
-export const AD_REDIRECT_URL = "https://wahyuandikaputra.my.id/";
+export const AD_REDIRECT_URL = "https://andikadev.com/";
 
 /**
  * Redirects the user to the sponsor / personal website when closing an ad.

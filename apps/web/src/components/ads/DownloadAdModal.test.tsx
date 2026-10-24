@@ -80,7 +80,7 @@ describe("DownloadAdModal & HD Download Flow", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("opens modal on HD download click, redirects to wahyuandikaputra on close, and unlocks item", async () => {
+  it("opens modal on HD download click, redirects to andikadev on close, and unlocks item", async () => {
     const windowOpenSpy = vi.spyOn(window, "open").mockReturnValue({ closed: false } as Window);
 
     const mockResult: DownloadResponse = {
@@ -118,9 +118,9 @@ describe("DownloadAdModal & HD Download Flow", () => {
     const closeAndDownloadBtn = screen.getByRole("button", { name: /Tutup Iklan & Download HD/i });
     fireEvent.click(closeAndDownloadBtn);
 
-    // Should redirect to wahyuandikaputra.my.id
+    // Should redirect to andikadev.com
     expect(windowOpenSpy).toHaveBeenCalledWith(
-      "https://wahyuandikaputra.my.id/",
+      "https://andikadev.com/",
       "_blank",
       "noopener,noreferrer"
     );
